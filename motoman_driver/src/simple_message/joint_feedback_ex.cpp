@@ -51,6 +51,8 @@ namespace industrial
 namespace joint_feedback_ex
 {
 
+const int MOT_MAX_GR = 4;
+
 JointFeedbackEx::JointFeedbackEx(void)
 {
   this->init();
@@ -84,6 +86,7 @@ bool JointFeedbackEx::operator==(JointFeedbackEx &rhs)
 
 bool JointFeedbackEx::load(industrial::byte_array::ByteArray *buffer)
 {
+  ROS_ERROR("JointFeedbackEx::load");
   LOG_COMM("Executing joint feedback load");
 
 
@@ -109,6 +112,7 @@ bool JointFeedbackEx::load(industrial::byte_array::ByteArray *buffer)
 
 bool JointFeedbackEx::unload(industrial::byte_array::ByteArray *buffer)
 {
+  
   LOG_COMM("Executing joint feedback unload");
 
   if (!buffer->unloadFront(this->groups_number_))
@@ -117,24 +121,25 @@ bool JointFeedbackEx::unload(industrial::byte_array::ByteArray *buffer)
     return false;
   }
 
-  for (int i = 0; i < this->groups_number_; i++)
+  // AKo: Fix for robot configurations with <4 groups
+  for (int i = MOT_MAX_GR-1; i >= 0; --i)
   {
     JointFeedbackMessage tmp_msg;
     JointFeedback j_feedback;
-
-
 
     if (!buffer->unload(j_feedback))
     {
       LOG_ERROR("Failed to unload joint feedback groups_number");
       return false;
     }
+
     tmp_msg.init(j_feedback);
-
-    this->joint_feedback_messages_.push_back(tmp_msg);
+    if (i < this->groups_number_)
+    {
+      this->joint_feedback_messages_.push_back(tmp_msg);
+    }
   }
-
-
+  
   LOG_COMM("Joint feedback successfully unloaded");
   return true;
 }

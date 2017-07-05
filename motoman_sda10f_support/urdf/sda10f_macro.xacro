@@ -15,11 +15,20 @@
             <origin xyz="0.09996 -0.0275 0.32214" rpy="1.57 0 0" />
         </xacro:motoman_arm>
      </xacro:macro>
-            
+    
+
+    
 <!-- The following xacro is kept for backwards compatibility, it should not be used -->
 <!-- see: https://github.com/ros-industrial/motoman/issues/166 -->
      <xacro:macro name="sda10f">
           <xacro:motoman_sda10f prefix=""/> 
      </xacro:macro>
-
+    		<!-- link list -->
+    <link name="base_link"> </link>
+    <joint name="torso_base_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="torso_base_link"/>
+        <origin xyz="0.0 0 0.0" rpy="0 0 0"/>
+        <axis xyz="0 0 1" />
+    </joint>
 </robot>

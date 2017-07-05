@@ -226,6 +226,8 @@ protected:
    */
   virtual bool create_message(int seq, const trajectory_msgs::JointTrajectoryPoint &pt, SimpleMessage* msg);
 
+  virtual bool create_message(int seq, const trajectory_msgs::JointTrajectory &singlePtTraj, SimpleMessage *msg);
+
   virtual bool create_message(int seq, const motoman_msgs::DynamicJointsGroup &pt, SimpleMessage* msg);
 
   virtual bool create_message_ex(int seq, const motoman_msgs::DynamicJointPoint &pt, SimpleMessage* msg);
@@ -300,6 +302,8 @@ protected:
    */
   virtual void jointTrajectoryCB(const trajectory_msgs::JointTrajectoryConstPtr &msg);
 
+  virtual void jointCommandCB(const trajectory_msgs::JointTrajectoryConstPtr &msg);
+
   /**
    * \brief Callback function registered to ROS stopMotion service
    *   Sends stop-motion command to robot.
@@ -346,6 +350,7 @@ protected:
   ros::Subscriber sub_joint_trajectory_ex_;  // handle for joint-trajectory topic subscription
   ros::ServiceServer srv_joint_trajectory_ex_;  // handle for joint-trajectory service
   ros::ServiceServer srv_stop_motion_;   // handle for stop_motion service
+  ros::Subscriber sub_joint_command_; // handle for joint-trajectory topic subscription
 
   std::map<int, ros::ServiceServer> srv_stops_;
   std::map<int, ros::ServiceServer> srv_joints_;

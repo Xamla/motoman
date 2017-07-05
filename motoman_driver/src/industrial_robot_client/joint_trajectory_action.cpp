@@ -48,7 +48,7 @@ namespace joint_trajectory_action
 {
 
 const double JointTrajectoryAction::WATCHD0G_PERIOD_ = 1.0;
-const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 0.01;
+const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 0.1;
 
 JointTrajectoryAction::JointTrajectoryAction() :
   action_server_(node_, "joint_trajectory_action",
@@ -271,10 +271,14 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
         dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
         dyn_group.group_number = group_number;
         dyn_group.num_joints = dyn_group.positions.size();
+
+        dpoint.groups.push_back(dyn_group);
       }
 
+      // AKo: Commented out to allow moves that affect multiple but not all groups (e.g. one arm and torso)
+
       // Generating message for groups that were not present in the trajectory message
-      else
+      /*else
       {
         std::vector<double> positions(num_joints, 0.0);
         std::vector<double> velocities(num_joints, 0.0);
@@ -289,9 +293,9 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
         dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
         dyn_group.group_number = group_number;
         dyn_group.num_joints = num_joints;
-      }
+      }*/
 
-      dpoint.groups.push_back(dyn_group);
+      
     }
     dpoint.num_groups = dpoint.groups.size();
     dyn_traj.points.push_back(dpoint);
@@ -477,7 +481,7 @@ void JointTrajectoryAction::controllerStateCB(
   // Checking for goal constraints
   // Checks that we have ended inside the goal constraints and has motion stopped
 
-  ROS_DEBUG("Checking goal constraints");
+  ROS_INFO("B Checking goal constraints");
   if (withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
   {
     if (last_robot_status_)
@@ -517,7 +521,7 @@ void JointTrajectoryAction::controllerStateCB(
 void JointTrajectoryAction::controllerStateCB(
   const control_msgs::FollowJointTrajectoryFeedbackConstPtr &msg)
 {
-  ROS_DEBUG("Checking controller state feedback");
+  ROS_INFO("Checking controller state feedback");
   last_trajectory_state_ = msg;
   trajectory_state_recvd_ = true;
 
@@ -541,7 +545,7 @@ void JointTrajectoryAction::controllerStateCB(
   // Checking for goal constraints
   // Checks that we have ended inside the goal constraints and has motion stopped
 
-  ROS_DEBUG("Checking goal constraints");
+  ROS_INFO("A Checking goal constraints");
   if (withinGoalConstraints(last_trajectory_state_, current_traj_))
   {
     if (last_robot_status_)

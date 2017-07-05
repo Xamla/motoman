@@ -149,6 +149,7 @@ bool RobotStateInterface::init(SmplMsgConnection* connection, std::map<int, Robo
 
   ROS_INFO("Successfully initialized robot state interface");
   return true;
+  
 }
 
 bool RobotStateInterface::init(SmplMsgConnection* connection, std::vector<std::string>& joint_names)

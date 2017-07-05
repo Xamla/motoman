@@ -121,6 +121,8 @@ public:
    */
   virtual bool create_message(int seq, const trajectory_msgs::JointTrajectoryPoint &pt, SimpleMessage* msg);
 
+  virtual bool create_message(int seq, const trajectory_msgs::JointTrajectory &singlePtTraj, SimpleMessage *msg);
+
   virtual bool create_message(int seq, const motoman_msgs::DynamicJointsGroup &pt, SimpleMessage* msg);
 
   virtual bool create_message_ex(int seq, const motoman_msgs::DynamicJointPoint &point, SimpleMessage* msg);

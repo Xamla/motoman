@@ -171,7 +171,7 @@ bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_ms
 {
   JointTrajPtFull msg_data;
   JointData values;
-
+  ROS_WARN("MotomanJointTrajectoryStreamer: create_message");
   // copy position data
   if (!pt.positions.empty())
   {
@@ -218,8 +218,124 @@ bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_ms
   return jtpf_msg.toRequest(*msg);  // assume "request" COMM_TYPE for now
 }
 
+bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_msgs::JointTrajectory &singlePtTraj, SimpleMessage *msg)
+{
+
+  ROS_ERROR("MotomanJointTrajectoryStreamer::create_message() Single Point Trajectory");   // ##
+
+  if (singlePtTraj.points.size() != 1)
+  {
+    ROS_ERROR_RETURN(false, "Point streaming expects a JointTrajectory message with a single point.");
+  }
+
+  const std::vector<std::string>& joint_names = singlePtTraj.joint_names;
+  const trajectory_msgs::JointTrajectoryPoint& point = singlePtTraj.points[0];
+
+  if (point.positions.empty() || point.positions.size() != joint_names.size())
+  {
+    ROS_ERROR_RETURN(false, "Streaming point has invalid position information.");
+  }
+
+  if (point.positions.size() != point.velocities.size())
+  {
+    ROS_ERROR_RETURN(false, "Streaming point position and velocity count differs.");
+  }
+
+  /*
+  ROS_ERROR("Got joint data for %d joints.", (int)joint_names.size());
+  for (int i = 0; i < joint_names.size(); ++i)
+  {
+    ROS_ERROR("j:%s, p:%f", joint_names[i].c_str(), point.positions[i]);
+  }
+  */
+
+  JointTrajPtFullEx msg_data_ex;
+  JointTrajPtFullExMessage jtpf_msg_ex;
+  std::vector<industrial::joint_traj_pt_full::JointTrajPtFull> msg_data_vector;
+
+  JointData values;
+
+  // for each group check if all joints are present in trajectory message and copy matching data
+
+  for (std::map<int, RobotGroup>::iterator gi = this->robot_groups_.begin(); gi != this->robot_groups_.end(); ++gi)
+  {
+    int group_number = gi->first;
+    RobotGroup& group = gi->second;
+    const std::vector<std::string>& group_joint_names = group.get_joint_names();
+
+    // check if all joints are present in trajectory
+    std::vector<std::string>::const_iterator ji = group_joint_names.begin();
+    std::vector<int> joint_indices;
+    for (; ji != group_joint_names.end(); ++ji)
+    {
+      const std::string& joint_name = *ji;
+      int joint_index = std::find(joint_names.begin(), joint_names.end(), joint_name) - joint_names.begin();
+
+      if (joint_index < joint_names.size())
+      {
+        joint_indices.push_back(joint_index);
+      }
+      else
+      {
+        //ROS_ERROR("joint missing: %s", joint_name.c_str());   // ##
+        break;
+      }
+    }
+
+    if (joint_indices.size() == group_joint_names.size())  // all joints of group found
+    {
+      //ROS_ERROR("All %d joints of group %d found!", (int)joint_indices.size(), group_number);
+
+      JointTrajPtFull msg_data;
+
+      std::vector<double> positions(10, 0.0);
+      std::vector<double> velocities(10, 0.0);
+      for (size_t i = 0; i < joint_indices.size(); ++i)
+      {
+        positions[i] = point.positions[joint_indices[i]];
+        velocities[i] = point.velocities[joint_indices[i]];
+      }
+
+      // copy position data
+      if (VectorToJointData(positions, values))
+        msg_data.setPositions(values);
+      else
+        ROS_ERROR_RETURN(false, "Failed to copy position data to JointTrajPtFullMessage");
+
+      // copy velocity data
+      if (VectorToJointData(velocities, values))
+        msg_data.setVelocities(values);
+      else
+        ROS_ERROR_RETURN(false, "Failed to copy velocity data to JointTrajPtFullMessage");
+
+      msg_data.clearAccelerations();
+
+      // copy scalar data
+      msg_data.setRobotID(group_number);
+      msg_data.setSequence(seq);
+      msg_data.setTime(point.time_from_start.toSec());
+
+      // convert to message
+      msg_data_vector.push_back(msg_data);
+    }
+    else
+    {
+      ROS_ERROR("Skipping group no %d due to missing joints.", group_number);
+    }
+  }
+
+  msg_data_ex.setMultiJointTrajPtData(msg_data_vector);
+  msg_data_ex.setNumGroups(msg_data_vector.size());
+  msg_data_ex.setSequence(seq);
+  jtpf_msg_ex.init(msg_data_ex);
+
+  return jtpf_msg_ex.toRequest(*msg);  // assume "request" COMM_TYPE for now
+}
+
+
 bool MotomanJointTrajectoryStreamer::create_message_ex(int seq, const motoman_msgs::DynamicJointPoint &point, SimpleMessage *msg)
 {
+  //ROS_WARN("MotomanJointTrajectoryStreamer: create_message_ex");
   JointTrajPtFullEx msg_data_ex;
   JointTrajPtFullExMessage jtpf_msg_ex;
   std::vector<industrial::joint_traj_pt_full::JointTrajPtFull> msg_data_vector;
@@ -227,9 +343,10 @@ bool MotomanJointTrajectoryStreamer::create_message_ex(int seq, const motoman_ms
   JointData values;
 
   int num_groups = point.num_groups;
-
+  //ROS_INFO("[create_message_ex] num_groups: %d", num_groups);
   for (int i = 0; i < num_groups; i++)
   {
+    //ROS_INFO("[create_message_ex] group id: %d", i);
     JointTrajPtFull msg_data;
 
     motoman_msgs::DynamicJointsGroup pt;
@@ -237,7 +354,7 @@ bool MotomanJointTrajectoryStreamer::create_message_ex(int seq, const motoman_ms
     motoman_msgs::DynamicJointPoint dpoint;
 
     pt = point.groups[i];
-
+    //ROS_INFO("[create_message_ex] position DIM: %d", (int)pt.positions.size());
     if (pt.positions.size() < 10)
     {
       int size_to_complete = 10 - pt.positions.size();
@@ -254,8 +371,13 @@ bool MotomanJointTrajectoryStreamer::create_message_ex(int seq, const motoman_ms
     // copy position data
     if (!pt.positions.empty())
     {
-      if (VectorToJointData(pt.positions, values))
+      if (VectorToJointData(pt.positions, values)){
+        ROS_INFO("Target Joint Positions");
+        for ( int i = 0; i<pt.positions.size(); i++){
+          ROS_INFO("%f",pt.positions[i]);
+        }
         msg_data.setPositions(values);
+      }
       else
         ROS_ERROR_RETURN(false, "Failed to copy position data to JointTrajPtFullMessage");
     }
@@ -302,6 +424,7 @@ bool MotomanJointTrajectoryStreamer::create_message_ex(int seq, const motoman_ms
 
 bool MotomanJointTrajectoryStreamer::create_message(int seq, const motoman_msgs::DynamicJointsGroup &pt, SimpleMessage *msg)
 {
+  //ROS_WARN("MotomanJointTrajectoryStreamer: create_message B");
   JointTrajPtFull msg_data;
   JointData values;
   // copy position data
@@ -379,7 +502,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
 {
   int connectRetryCount = 1;
 
-  ROS_INFO("Starting Motoman joint trajectory streamer thread");
+  //ROS_INFO("Starting Motoman joint trajectory streamer thread");
   while (ros::ok())
   {
     ros::Duration(0.005).sleep();
@@ -408,10 +531,11 @@ void MotomanJointTrajectoryStreamer::streamingThread()
     switch (this->state_)
     {
     case TransferStates::IDLE:
-      ros::Duration(0.250).sleep();  //  slower loop while waiting for new trajectory
+      ros::Duration(0.0250).sleep();  //  slower loop while waiting for new trajectory
       break;
 
     case TransferStates::STREAMING:
+//      ROS_INFO("TransferStates::STREAMING");
       if (this->current_point_ >= static_cast<int>(this->current_traj_.size()))
       {
         ROS_INFO("Trajectory streaming complete, setting state to IDLE");
@@ -441,7 +565,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
           this->state_ = TransferStates::IDLE;
           break;
         }
-
+ //       ROS_INFO("Sending motoman joint trajectory point");
         if (reply_status.reply_.getResult() == MotionReplyResults::SUCCESS)
         {
           ROS_DEBUG("Point[%d of %d] sent to controller",
@@ -449,7 +573,10 @@ void MotomanJointTrajectoryStreamer::streamingThread()
           this->current_point_++;
         }
         else if (reply_status.reply_.getResult() == MotionReplyResults::BUSY)
+        {
+          //ROS_WARN("MotionReplyResults::BUSY");
           break;  // silently retry sending this point
+        }
         else
         {
           ROS_ERROR_STREAM("Aborting Trajectory.  Failed to send point"
@@ -460,6 +587,75 @@ void MotomanJointTrajectoryStreamer::streamingThread()
         }
       }
       break;
+   case TransferStates::POINT_STREAMING:
+        //if no points in queue, streaming complete, set to idle.
+        if (this->streaming_queue_.empty())
+        {
+          if (this->time_since_last_ < this->point_streaming_timeout)
+          {
+            time_since_last_ = ros::Time::now().toSec() - time_of_last_;
+            ros::Duration(0.005).sleep();
+            //ROS_INFO("Time since last point: %f", time_since_last);
+            break;
+          }
+          else
+          {
+            ROS_INFO("Point streaming complete, setting state to IDLE");
+            this->state_ = TransferStates::IDLE;
+            break;
+          }
+        }
+        //if not connected, reconnect.
+         if (!this->connection_->isConnected())
+        {
+          ROS_DEBUG("Robot disconnected.  Attempting reconnect...");
+          connectRetryCount = 5;
+          break;
+        }
+        //otherwise, send point to robot.
+        tmpMsg = this->streaming_queue_.front();
+        msg.init(tmpMsg.getMessageType(), CommTypes::SERVICE_REQUEST,
+                 ReplyTypes::INVALID, tmpMsg.getData());  // set commType=REQUEST
+            
+        ROS_INFO("Sending joint trajectory point");
+        if (this->connection_->sendAndReceiveMsg(msg, reply, false))
+        {         
+          MotionReplyMessage reply_status;
+          if (!reply_status.init(reply))
+          {
+            ROS_ERROR("Aborting point stream operation.");
+            this->state_ = TransferStates::IDLE;
+            break;
+          }
+          if (reply_status.reply_.getResult() == MotionReplyResults::SUCCESS)
+          {
+            ROS_INFO("Point[%d] sent to controller", this->current_point_);
+            this->current_point_++;
+            time_since_last_ = 0.0;
+            time_of_last_ = ros::Time::now().toSec();
+            this->streaming_queue_.pop();
+          }
+          else if (reply_status.reply_.getResult() == MotionReplyResults::BUSY)
+          {  
+            ROS_INFO("silently resending.");
+            break;  // silently retry sending this point
+          }
+          else
+          {
+            ROS_ERROR_STREAM("Aborting point stream operation.  Failed to send point"
+                             << " (#" << this->current_point_ << "): "
+                             << MotomanMotionCtrl::getErrorString(reply_status.reply_));
+            this->state_ = TransferStates::IDLE;
+            break;
+          }
+        }
+        else
+        {
+          ROS_WARN("Failed sent joint point, will try again");
+        }
+
+      break;
+
     default:
       ROS_ERROR("Joint trajectory streamer: unknown state");
       this->state_ = TransferStates::IDLE;

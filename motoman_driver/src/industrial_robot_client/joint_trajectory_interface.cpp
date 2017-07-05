@@ -149,6 +149,8 @@ bool JointTrajectoryInterface::init(
                                   "joint_path_command", &JointTrajectoryInterface::jointTrajectoryExCB, this);
   this->sub_joint_trajectory_ = this->node_.subscribe(
                                   "joint_path_command", 0, &JointTrajectoryInterface::jointTrajectoryExCB, this);
+  this->sub_joint_command_ = this->node_.subscribe(
+                                  "joint_command", 0, &JointTrajectoryInterface::jointCommandCB, this);
   this->srv_stop_motion_ = this->node_.advertiseService(
                              "stop_motion", &JointTrajectoryInterface::stopMotionCB, this);
 
@@ -236,12 +238,12 @@ void JointTrajectoryInterface::jointTrajectoryExCB(
     trajectoryStop();
     return;
   }
-
+  ROS_INFO("convert trajectory into robot-format");
   // convert trajectory into robot-format
   std::vector<SimpleMessage> robot_msgs;
   if (!trajectory_to_msgs(msg, &robot_msgs))
     return;
-
+    ROS_INFO("send command messages to robot");
   // send command messages to robot
   send_to_robot(robot_msgs);
 }
@@ -267,6 +269,11 @@ void JointTrajectoryInterface::jointTrajectoryCB(
 
   // send command messages to robot
   send_to_robot(robot_msgs);
+}
+
+void JointTrajectoryInterface::jointCommandCB(
+  const trajectory_msgs::JointTrajectoryConstPtr &msg)
+{
 }
 
 bool JointTrajectoryInterface::trajectory_to_msgs(
@@ -325,11 +332,11 @@ bool JointTrajectoryInterface::trajectory_to_msgs(
   std::vector<SimpleMessage>* msgs)
 {
   msgs->clear();
-
+  ROS_INFO("check for valid trajectory");
   // check for valid trajectory
   if (!is_valid(*traj))
     return false;
-
+  ROS_INFO("convert trajectory");
   for (size_t i = 0; i < traj->points.size(); ++i)
   {
     SimpleMessage msg;
@@ -612,6 +619,11 @@ bool JointTrajectoryInterface::create_message_ex(
   int seq, const motoman_msgs::DynamicJointPoint &pt, SimpleMessage *msg)
 {
   return true;
+}
+
+bool JointTrajectoryInterface::create_message(int seq, const trajectory_msgs::JointTrajectory &singlePtTraj, SimpleMessage *msg)
+{
+  return false;
 }
 
 bool JointTrajectoryInterface::create_message(

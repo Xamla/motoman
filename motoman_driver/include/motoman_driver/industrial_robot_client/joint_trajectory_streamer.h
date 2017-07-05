@@ -37,6 +37,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <queue>
 
 namespace industrial_robot_client
 {
@@ -51,7 +52,7 @@ namespace TransferStates
 {
 enum TransferState
 {
-  IDLE = 0, STREAMING = 1  // ,STARTING, //, STOPPING
+  IDLE = 0, STREAMING = 1, POINT_STREAMING = 2  // ,STARTING, //, STOPPING
 };
 }
 typedef TransferStates::TransferState TransferState;
@@ -116,6 +117,8 @@ public:
 
   virtual void jointTrajectoryCB(const motoman_msgs::DynamicJointTrajectoryConstPtr &msg);
 
+  virtual void jointCommandCB(const trajectory_msgs::JointTrajectoryConstPtr &msg);
+
   virtual bool trajectory_to_msgs(const trajectory_msgs::JointTrajectoryConstPtr &traj, std::vector<SimpleMessage>* msgs);
 
   virtual bool trajectory_to_msgs(const motoman_msgs::DynamicJointTrajectoryConstPtr &traj, std::vector<SimpleMessage>* msgs);
@@ -130,10 +133,17 @@ protected:
   boost::thread* streaming_thread_;
   boost::mutex mutex_;
   int current_point_;
+  int streaming_sequence_;
   std::vector<SimpleMessage> current_traj_;
   TransferState state_;
   ros::Time streaming_start_;
   int min_buffer_size_;
+
+  std::queue<SimpleMessage> streaming_queue_;
+  double time_of_last_;
+  double time_since_last_;
+
+  static const double point_streaming_timeout = 3.0;
 };
 
 }  // namespace joint_trajectory_streamer

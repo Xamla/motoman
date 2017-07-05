@@ -47,6 +47,7 @@ namespace joint_feedback_relay_handler
 bool JointFeedbackRelayHandler::init(SmplMsgConnection* connection,
                                      std::map<int, RobotGroup> &robot_groups)
 {
+  // ROS_ERROR("[JointFeedbackRelayHandler] INIT with groups!!"); // ##
   this->version_0_ = false;
   bool rtn = JointRelayHandler::init(connection, static_cast<int>(StandardMsgTypes::JOINT_FEEDBACK), robot_groups);
   // try to read robot_id parameter, if none specified
@@ -73,6 +74,7 @@ bool JointFeedbackRelayHandler::create_messages(SimpleMessage& msg_in,
     control_msgs::FollowJointTrajectoryFeedback* control_state,
     sensor_msgs::JointState* sensor_state)
 {
+  //ROS_ERROR(" JointFeedbackRelayHandler::create_messages"); // ##
   // inspect robot_id field first, to avoid "Failed to Convert" message
   JointFeedbackMessage tmp_msg;
 
@@ -94,6 +96,10 @@ bool JointFeedbackRelayHandler::create_messages(SimpleMessage& msg_in,
     LOG_ERROR("Failed to convert SimpleMessage");
     return false;
   }
+  
+
+  //ROS_ERROR("create_message, decoded pos: %d, group count: %d, robot id: %d", all_joint_state.positions.size(), robot_groups_.size(), robot_id);  // ##
+
   // apply transform, if required
   DynamicJointsGroup xform_joint_state;
   if (!transform(all_joint_state, &xform_joint_state))
@@ -101,6 +107,15 @@ bool JointFeedbackRelayHandler::create_messages(SimpleMessage& msg_in,
     LOG_ERROR("Failed to transform joint state");
     return false;
   }
+
+  //ROS_ERROR("after transform, decoded pos: %d, group count: %d, robot id: %d", xform_joint_state.positions.size(), robot_groups_.size(), robot_id); // ##
+  
+
+  //ROS_ERROR("create_message, decoded pos: %d", all_joint_state.positions.size());
+  //for (int i=0; i<all_joint_state.positions.size(); ++i) {
+//    ROS_ERROR("j%d: %f", i, all_joint_state.positions[i]);
+//  }
+
 
   // select specific joints for publishing
   DynamicJointsGroup pub_joint_state;
@@ -110,6 +125,7 @@ bool JointFeedbackRelayHandler::create_messages(SimpleMessage& msg_in,
     LOG_ERROR("Failed to select joints for publishing");
     return false;
   }
+
   // assign values to messages
   *control_state = control_msgs::FollowJointTrajectoryFeedback();  // always start with a "clean" message
   control_state->header.stamp = ros::Time::now();
@@ -175,11 +191,13 @@ bool JointFeedbackRelayHandler::JointDataToVector(const JointData &joints,
 
 bool JointFeedbackRelayHandler::convert_message(JointFeedbackMessage& msg_in, DynamicJointsGroup* joint_state, int robot_id)
 {
+  //ROS_ERROR("JointFeedbackRelayHandler::convert_message: robot_id: %d", robot_id);
   JointData values;
   int num_jnts = robot_groups_[robot_id].get_joint_names().size();
   // copy position data
   if (msg_in.getPositions(values))
   {
+    
     if (!JointDataToVector(values, joint_state->positions, num_jnts))
     {
       LOG_ERROR("Failed to parse position data from JointFeedbackMessage");
@@ -187,7 +205,10 @@ bool JointFeedbackRelayHandler::convert_message(JointFeedbackMessage& msg_in, Dy
     }
   }
   else
+  {
+    //ROS_ERROR("NO pos");
     joint_state->positions.clear();
+  }
 
   // copy velocity data
   if (msg_in.getVelocities(values))
@@ -199,7 +220,10 @@ bool JointFeedbackRelayHandler::convert_message(JointFeedbackMessage& msg_in, Dy
     }
   }
   else
+  {
+    //ROS_ERROR("NO velocity");
     joint_state->velocities.clear();
+  }
 
   // copy acceleration data
   if (msg_in.getAccelerations(values))

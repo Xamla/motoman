@@ -1855,7 +1855,20 @@ void Ros_MotionServer_IncMoveLoopStart(Controller* controller) //<-- IP_CLK prio
 					else
 						printf("mpMeiIncrementMove returned: %d\r\n", ret);
 				}
-			}			
+			}		
+						
+			moveData.ctrl_grp = 3;
+			if(controller->numRobot > 1)
+			{
+				ret = mpMeiIncrementMove(MP_SL_ID1, &moveData);
+				if(ret != 0)
+				{
+					if(ret == -3)
+						printf("mpMeiIncrementMove returned: %d (ctrl_grp = %d)\r\n", ret, moveData.ctrl_grp);
+					else
+						printf("mpMeiIncrementMove returned: %d\r\n", ret);
+				}
+			}	
 #else
 			ret = mpExRcsIncrementMove(&moveData);
 			if(ret != 0)

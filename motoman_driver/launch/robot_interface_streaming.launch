@@ -14,6 +14,8 @@
   Usage:
     robot_interface_streaming.launch robot_ip:=<value> use_bswap:=<true,false>
 -->
+  	<env name="ROSCONSOLE_CONFIG_FILE"
+       value="$(find motoman_sda10f_support)/launch/rosconfig.conf"/>
 
 	<!-- version0: Set to true for older/single arm joint trajectory action -->
 	<arg name="version0" />
@@ -39,10 +41,10 @@
 	<!-- motion_streaming_interface: sends robot motion commands by 
 	     STREAMING path to robot (using socket connection to robot) 
 	-->
-	<include file="$(find motoman_driver)/launch/motion_streaming_interface.launch">
+	<!--Include file="$(find motoman_driver)/launch/motion_streaming_interface.launch">
 		<arg name="robot_ip"   value="$(arg robot_ip)" />
 		<arg name="use_bswap"  value="$(arg use_bswap)" />
-	</include>
+	</Include-->
 
 	<!-- joint_trajectory_action: provides actionlib interface for 
 	     high-level robot control
