@@ -175,9 +175,11 @@ void JointTrajectoryStreamer::jointCommandCB(
       this->current_point_ = 0;
       this->streaming_sequence_ = 0;
       this->streaming_start_ = ros::Time::now();
+      this->streaming_queue_ = std::queue<SimpleMessage>();
     this->mutex_.unlock();
     state = TransferStates::POINT_STREAMING;
-    ROS_INFO("First joint point received. Starting on-the-fly streaming.");  
+    ROS_INFO("First joint point received. Starting on-the-fly streaming.");
+    this->setStreamingMode(true);
   }
   
   //if current state is POINT_STREAMING, process incoming point.

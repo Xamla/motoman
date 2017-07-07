@@ -139,6 +139,8 @@ public:
 
 protected:
 
+  virtual void setStreamingMode(bool enable) = 0;
+
   /**
    * \brief Send a stop command to the robot
    */

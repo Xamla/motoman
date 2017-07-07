@@ -143,7 +143,7 @@ protected:
   double time_of_last_;
   double time_since_last_;
 
-  static const double point_streaming_timeout = 3.0;
+  static const double point_streaming_timeout = 0.5;
 };
 
 }  // namespace joint_trajectory_streamer

@@ -90,6 +90,30 @@ bool MotomanMotionCtrl::setTrajMode(bool enable)
   return true;
 }
 
+
+bool MotomanMotionCtrl::setStreamMode(bool enable)
+{
+  ROS_ERROR("setStreamMode: %s", enable ? "true": "false");
+
+  MotionReply reply;
+  MotionControlCmd cmd = enable ? MotionControlCmds::START_STREAM_MODE : MotionControlCmds::STOP_STREAM_MODE;
+
+  if (!sendAndReceive(cmd, reply))
+  {
+    ROS_ERROR("Failed to send STREAM_MODE command");
+    return false;
+  }
+
+  if (reply.getResult() != MotionReplyResults::SUCCESS)
+  {
+    ROS_ERROR_STREAM("Failed to set TrajectoryMode: " << getErrorString(reply));
+    return false;
+  }
+
+  return true;
+}
+
+
 bool MotomanMotionCtrl::stopTrajectory()
 {
   MotionReply reply;

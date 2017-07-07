@@ -61,6 +61,7 @@ public:
 public:
   bool controllerReady();
   bool setTrajMode(bool enable);
+  bool setStreamMode(bool enable);
   bool stopTrajectory();
 
   static std::string getErrorString(const MotionReply &reply);

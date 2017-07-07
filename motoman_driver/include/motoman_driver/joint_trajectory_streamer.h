@@ -174,6 +174,7 @@ protected:
                      std_srvs::Trigger::Response &res);
 
 
+  virtual void setStreamingMode(bool enable);
 };
 
 }  // namespace joint_trajectory_streamer

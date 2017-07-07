@@ -220,9 +220,6 @@ bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_ms
 
 bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_msgs::JointTrajectory &singlePtTraj, SimpleMessage *msg)
 {
-
-  ROS_ERROR("MotomanJointTrajectoryStreamer::create_message() Single Point Trajectory");   // ##
-
   if (singlePtTraj.points.size() != 1)
   {
     ROS_ERROR_RETURN(false, "Point streaming expects a JointTrajectory message with a single point.");
@@ -318,10 +315,10 @@ bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_ms
       // convert to message
       msg_data_vector.push_back(msg_data);
     }
-    else
-    {
-      ROS_ERROR("Skipping group no %d due to missing joints.", group_number);
-    }
+    // else
+    // {
+    //   ROS_ERROR("Skipping group no %d due to missing joints.", group_number);
+    // }
   }
 
   msg_data_ex.setMultiJointTrajPtData(msg_data_vector);
@@ -497,6 +494,13 @@ bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessa
   return JointTrajectoryStreamer::send_to_robot(messages);
 }
 
+
+ void MotomanJointTrajectoryStreamer::setStreamingMode(bool enable)
+ {
+   this->motion_ctrl_.setStreamMode(enable);
+ }
+
+
 // override streamingThread, to provide check/retry of MotionReply.result=BUSY
 void MotomanJointTrajectoryStreamer::streamingThread()
 {
@@ -601,6 +605,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
           else
           {
             ROS_INFO("Point streaming complete, setting state to IDLE");
+            this->setStreamingMode(false);
             this->state_ = TransferStates::IDLE;
             break;
           }
@@ -624,6 +629,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
           if (!reply_status.init(reply))
           {
             ROS_ERROR("Aborting point stream operation.");
+            this->setStreamingMode(false);
             this->state_ = TransferStates::IDLE;
             break;
           }
@@ -645,7 +651,9 @@ void MotomanJointTrajectoryStreamer::streamingThread()
             ROS_ERROR_STREAM("Aborting point stream operation.  Failed to send point"
                              << " (#" << this->current_point_ << "): "
                              << MotomanMotionCtrl::getErrorString(reply_status.reply_));
+            this->setStreamingMode(false);
             this->state_ = TransferStates::IDLE;
+            this->streaming_queue_ = std::queue<SimpleMessage>();
             break;
           }
         }
@@ -659,6 +667,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
     default:
       ROS_ERROR("Joint trajectory streamer: unknown state");
       this->state_ = TransferStates::IDLE;
+      this->setStreamingMode(false);
       break;
     }
     this->mutex_.unlock();
@@ -671,6 +680,7 @@ void MotomanJointTrajectoryStreamer::trajectoryStop()
 {
   this->state_ = TransferStates::IDLE;  // stop sending trajectory points
   motion_ctrl_.stopTrajectory();
+  this->setStreamingMode(false);
 }
 
 // override is_valid to include FS100-specific checks
