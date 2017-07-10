@@ -65,7 +65,13 @@ enum MotionControlCmd
   STOP_TRAJ_MODE     = 200122,  // return motion control to INFORM
 
   START_STREAM_MODE  = 200123,  // start point streaming mode
-  STOP_STREAM_MODE   = 200124   // stop point streaming mode
+  STOP_STREAM_MODE   = 200124,  // stop point streaming mode
+
+  GET_MAX_VEL        = 200125,  // get maximum velocity for TVP
+  SET_MAX_VEL        = 200126,  // set maximum velocity for TVP
+
+  GET_MAX_ACC        = 200127,  // get maximum acceleration for TVP
+  SET_MAX_ACC        = 200128,  // set maximum acceleration for TVP
 };
 }  // namespace MotionControlCmds
 typedef MotionControlCmds::MotionControlCmd MotionControlCmd;

@@ -144,6 +144,8 @@ protected:
   double time_since_last_;
 
   static const double point_streaming_timeout = 0.5;
+
+  virtual void setStreamingMode(bool enable) {}
 };
 
 }  // namespace joint_trajectory_streamer

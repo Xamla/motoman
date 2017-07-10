@@ -176,10 +176,12 @@ void JointTrajectoryStreamer::jointCommandCB(
       this->streaming_sequence_ = 0;
       this->streaming_start_ = ros::Time::now();
       this->streaming_queue_ = std::queue<SimpleMessage>();
+      this->setStreamingMode(true);
+      state = TransferStates::POINT_STREAMING;
+      time_since_last_ = 0.0;
+      time_of_last_ = ros::Time::now().toSec();
     this->mutex_.unlock();
-    state = TransferStates::POINT_STREAMING;
     ROS_INFO("First joint point received. Starting on-the-fly streaming.");
-    this->setStreamingMode(true);
   }
   
   //if current state is POINT_STREAMING, process incoming point.
@@ -213,6 +215,11 @@ void JointTrajectoryStreamer::jointCommandCB(
        
     //Points get pushed into queue here. They will be popped in the Streaming Thread and sent to controller.
     this->mutex_.lock();
+      while (!this->streaming_queue_.empty())   // ## clear queue
+      {
+        this->streaming_queue_.pop();
+      }
+
       this->streaming_queue_.push(message);
       this->streaming_sequence_++;
     this->mutex_.unlock();

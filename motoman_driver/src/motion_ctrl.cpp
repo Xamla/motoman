@@ -72,7 +72,7 @@ bool MotomanMotionCtrl::controllerReady()
 
 bool MotomanMotionCtrl::setTrajMode(bool enable)
 {
-  MotionReply reply;
+   MotionReply reply;
   MotionControlCmd cmd = enable ? MotionControlCmds::START_TRAJ_MODE : MotionControlCmds::STOP_TRAJ_MODE;
 
   if (!sendAndReceive(cmd, reply))
@@ -86,6 +86,69 @@ bool MotomanMotionCtrl::setTrajMode(bool enable)
     ROS_ERROR_STREAM("Failed to set TrajectoryMode: " << getErrorString(reply));
     return false;
   }
+
+  return true;
+}
+
+
+bool MotomanMotionCtrl::getMaxAcc(int groupNo, float* max_acc)
+{
+  MotionReply reply;
+  MotionControlCmd cmd = MotionControlCmds::GET_MAX_ACC;
+
+  if (!sendAndReceive(cmd, reply))
+  {
+    ROS_ERROR("Failed to send GET_MAX_ACC command");
+    return false;
+  }
+
+  if (reply.getResult() != MotionReplyResults::SUCCESS)
+  {
+    ROS_ERROR_STREAM("Failed to set TrajectoryMode: " << getErrorString(reply));
+    return false;
+  }
+
+  for (size_t i = 0; i < 8; ++i)
+  {
+    max_acc[i] = reply.getData(i);
+  }
+
+  return true;
+}
+
+
+bool MotomanMotionCtrl::setMaxAcc(int groupNo, float* max_acc)
+{
+  MotionReply reply;
+
+  SimpleMessage req, res;
+  MotionCtrl data;
+  MotionCtrlMessage ctrl_msg;
+  MotionReplyMessage ctrl_reply;
+
+  data.init(groupNo, 0, MotionControlCmds::SET_MAX_ACC, 0);
+  for (size_t i = 0; i < 8; ++i)
+  {
+    data.setData(i, max_acc[i]);
+  }
+  
+  ctrl_msg.init(data);
+  ctrl_msg.toRequest(req);
+
+  if (!this->connection_->sendAndReceiveMsg(req, res))
+  {
+    ROS_ERROR("Failed to send MotionCtrl message");
+    return false;
+  }
+
+  ctrl_reply.init(res);
+  reply.copyFrom(ctrl_reply.reply_);
+
+    if (reply.getResult() != MotionReplyResults::SUCCESS)
+    {
+      ROS_ERROR_STREAM("Failed to set TrajectoryMode: " << getErrorString(reply));
+      return false;
+    }
 
   return true;
 }

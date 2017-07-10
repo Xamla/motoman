@@ -62,6 +62,9 @@ public:
   bool controllerReady();
   bool setTrajMode(bool enable);
   bool setStreamMode(bool enable);
+  bool MotomanMotionCtrlsetMaxAcc(int groupNo, float* max_acc);
+  bool getMaxAcc(int groupNo, float* max_acc);
+  bool setMaxAcc(int groupNo, float* max_acc);
   bool stopTrajectory();
 
   static std::string getErrorString(const MotionReply &reply);
