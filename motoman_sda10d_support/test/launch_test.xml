@@ -5,7 +5,7 @@
   Usage Instructions:
 
   1. Add the following to your CMakeLists.txt:
-    
+
     find_package(roslaunch)
     roslaunch_add_file_check(test/launch_test.xml)
 
@@ -31,46 +31,46 @@
   <arg name="dx100" value="dx100"/>
   <arg name="fs100" value="fs100" />
 
-  <group ns="load_sda10f">
-	  <include file="$(find motoman_sda10f_support)/launch/load_sda10f.launch"/>
+  <group ns="load_sda10d">
+	  <include file="$(find motoman_sda10d_support)/launch/load_sda10d.launch"/>
   </group>
 
-  <group ns="test_sda10f">
-	  <include file="$(find motoman_sda10f_support)/launch/test_sda10f.launch"/>
-  </group>
-  
-  
-  <group ns="urdf_sda10f">
-	  <param name="robot_description" command="$(find xacro)/xacro.py '$(find motoman_sda10f_support)/test/sda10f_test.xacro'" />
+  <group ns="test_sda10d">
+	  <include file="$(find motoman_sda10d_support)/launch/test_sda10d.launch"/>
   </group>
 
 
-  <group ns="robot_interface_streaming_sda10f">
+  <group ns="urdf_sda10d">
+	  <param name="robot_description" command="$(find xacro)/xacro.py '$(find motoman_sda10d_support)/test/sda10d_test.xacro'" />
+  </group>
+
+
+  <group ns="robot_interface_streaming_sda10d">
     <group ns="dx100" >
-	    <include file="$(find motoman_sda10f_support)/launch/robot_interface_streaming_sda10f.launch">
+	    <include file="$(find motoman_sda10d_support)/launch/robot_interface_streaming_sda10d.launch">
 		    <arg name="robot_ip"   value="$(arg req_arg)" />
         <arg name="controller" value="$(arg dx100)"/>
 	    </include>
     </group>
 
     <group ns="fs100" >
-	    <include file="$(find motoman_sda10f_support)/launch/robot_interface_streaming_sda10f.launch">
+	    <include file="$(find motoman_sda10d_support)/launch/robot_interface_streaming_sda10d.launch">
 		    <arg name="robot_ip"   value="$(arg req_arg)" />
         <arg name="controller" value="$(arg fs100)"/>
 	    </include>
     </group>
   </group>
 
-  <group ns="robot_state_visualize_sda10f">
+  <group ns="robot_state_visualize_sda10d">
     <group ns="dx100" >
-	    <include file="$(find motoman_sda10f_support)/launch/robot_state_visualize_sda10f.launch">
+	    <include file="$(find motoman_sda10d_support)/launch/robot_state_visualize_sda10d.launch">
 		    <arg name="robot_ip"   value="$(arg req_arg)" />
         <arg name="controller" value="$(arg dx100)"/>
 	    </include>
     </group>
 
     <group ns="fs100" >
-	    <include file="$(find motoman_sda10f_support)/launch/robot_state_visualize_sda10f.launch">
+	    <include file="$(find motoman_sda10d_support)/launch/robot_state_visualize_sda10d.launch">
 		    <arg name="robot_ip"   value="$(arg req_arg)" />
         <arg name="controller" value="$(arg fs100)"/>
 	    </include>
