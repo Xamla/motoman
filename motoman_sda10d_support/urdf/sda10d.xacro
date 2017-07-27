@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+
+<robot name="motoman_sda10d" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="$(find motoman_sda10d_support)/urdf/sda10d_macro.xacro" />
+    <xacro:include filename="$(find robotpart_repository)/urdf/table.urdf.xacro" />
+    <xacro:include filename="$(find robotpart_repository)/urdf/cover.urdf.xacro" />
+    <xacro:include filename="$(find wsg_50_simulation)/urdf/wsg_50.urdf.xacro" />
+    <xacro:include filename="$(find robotpart_repository)/urdf/gamma_ati.urdf.xacro" />
+    <link name="base_link"> </link>
+
+    <xacro:motoman_sda10d prefix="" parent="base_link">
+        <origin xyz="0.0 0.0 0.0" rpy="0 0 0" />
+    </xacro:motoman_sda10d>
+	 <!--==============add table robot arm===================-->
+    <xacro:table_model prefix="" parent="base_link">
+        <origin xyz="0.0 0.0 -0.16" rpy="${pi} 0 0" />
+    </xacro:table_model>
+    <xacro:cover_model prefix="" parent="arm_left_link_tool0">
+        <origin xyz="0.0 0.0 -0.0" rpy="${pi} 0 0" />
+    </xacro:cover_model>
+    <xacro:gamma_ati prefix="" parent="cover_body">
+        <origin xyz="0.0 0.0 0.02" rpy="0 0 ${pi/2}" />
+    </xacro:gamma_ati>
+    <xacro:wsg_50_xacro name="wsg_50_gripper" parent="gamma_ati_link">
+        <origin xyz="0.0 0.0 0.0386" rpy="0 0 0" />
+    </xacro:wsg_50_xacro>
+</robot>
+
+
+
+
+
