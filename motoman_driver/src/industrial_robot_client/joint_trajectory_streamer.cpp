@@ -166,7 +166,7 @@ void JointTrajectoryStreamer::jointCommandCB(
   int state = this->state_;
 
   ROS_DEBUG("Current state is: %d", state);
-  
+
   //If current state is idle, set to POINT_STREAMING
   if (TransferStates::IDLE == state)
   {
@@ -183,7 +183,7 @@ void JointTrajectoryStreamer::jointCommandCB(
     this->mutex_.unlock();
     ROS_INFO("First joint point received. Starting on-the-fly streaming.");
   }
-  
+
   //if current state is POINT_STREAMING, process incoming point.
   if (TransferStates::POINT_STREAMING == state)
   {
@@ -192,7 +192,7 @@ void JointTrajectoryStreamer::jointCommandCB(
       ROS_INFO("Empty point received, cancelling current trajectory");
       return;
     }
-    
+
     //Else, Push point into queue
     SimpleMessage message;
 
@@ -212,7 +212,7 @@ void JointTrajectoryStreamer::jointCommandCB(
     // convert trajectory point to ROS message
     if (!create_message(this->streaming_sequence_, xform_pt, &message))
       return; */
-       
+
     //Points get pushed into queue here. They will be popped in the Streaming Thread and sent to controller.
     this->mutex_.lock();
       while (!this->streaming_queue_.empty())   // ## clear queue
@@ -325,7 +325,7 @@ void JointTrajectoryStreamer::streamingThread()
     switch (this->state_)
     {
     case TransferStates::IDLE:
-      ros::Duration(0.025).sleep();  //  slower loop while waiting for new trajectory
+      ros::Duration(0.01).sleep();  //  slower loop while waiting for new trajectory
       break;
 
     case TransferStates::STREAMING:
@@ -360,7 +360,7 @@ void JointTrajectoryStreamer::streamingThread()
 
       break;
    case TransferStates::POINT_STREAMING:
-   
+
         ROS_ERROR("POINT_STREAMIN in base JointTrajectoryStreamer");   // ##
 
         //if no points in queue, streaming complete, set to idle.
@@ -384,7 +384,7 @@ void JointTrajectoryStreamer::streamingThread()
         this->streaming_queue_.pop();
         msg.init(tmpMsg.getMessageType(), CommTypes::SERVICE_REQUEST,
                  ReplyTypes::INVALID, tmpMsg.getData());  // set commType=REQUEST
-            
+
         ROS_DEBUG("Sending joint trajectory point");
         if (this->connection_->sendAndReceiveMsg(msg, reply, false))
         {
@@ -395,8 +395,8 @@ void JointTrajectoryStreamer::streamingThread()
           ROS_WARN("Failed sent joint point, will try again");
 
         break;
-        // consider checking for controller point starvation here. use a timer to check if the state 
-        // is popping in and out of POINT_STREAMING mode, indicating something is trying to send streaming 
+        // consider checking for controller point starvation here. use a timer to check if the state
+        // is popping in and out of POINT_STREAMING mode, indicating something is trying to send streaming
         // points, but is doing so too slowly. It may, in fact, not matter other than motion won't be smooth.
 
     default:

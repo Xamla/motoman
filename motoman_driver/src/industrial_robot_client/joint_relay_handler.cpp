@@ -159,15 +159,16 @@ bool JointRelayHandler::create_messages(SimpleMessage& msg_in,
   control_state->header.stamp = ros::Time::now();
   control_state->joint_names = pub_joint_names;
   control_state->actual.positions = pub_joint_state.positions;
-  control_state->actual.velocities = pub_joint_state.velocities;
-  control_state->actual.accelerations = pub_joint_state.accelerations;
+  //control_state->actual.velocities = pub_joint_state.velocities;
+  //control_state->actual.accelerations = pub_joint_state.accelerations;
   control_state->actual.time_from_start = pub_joint_state.time_from_start;
 
   *sensor_state = sensor_msgs::JointState();  // always start with a "clean" message
   sensor_state->header.stamp = ros::Time::now();
   sensor_state->name = pub_joint_names;
   sensor_state->position = pub_joint_state.positions;
-  sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->effort = pub_joint_state.accelerations;
 
   this->pub_joint_control_state_.publish(*control_state);
   this->pub_joint_sensor_state_.publish(*sensor_state);
@@ -207,15 +208,16 @@ bool JointRelayHandler::create_messages(SimpleMessage& msg_in,
   control_state->header.stamp = ros::Time::now();
   control_state->joint_names = pub_joint_names;
   control_state->actual.positions = pub_joint_state.positions;
-  control_state->actual.velocities = pub_joint_state.velocities;
-  control_state->actual.accelerations = pub_joint_state.accelerations;
+  //control_state->actual.velocities = pub_joint_state.velocities;
+  //control_state->actual.accelerations = pub_joint_state.accelerations;
   control_state->actual.time_from_start = pub_joint_state.time_from_start;
 
   *sensor_state = sensor_msgs::JointState();  // always start with a "clean" message
   sensor_state->header.stamp = ros::Time::now();
   sensor_state->name = pub_joint_names;
   sensor_state->position = pub_joint_state.positions;
-  sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->effort = pub_joint_state.accelerations;
 
   this->pub_controls_[robot_id].publish(*control_state);
   this->pub_states_[robot_id].publish(*sensor_state);

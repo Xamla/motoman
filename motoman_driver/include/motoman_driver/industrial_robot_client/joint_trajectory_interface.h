@@ -86,7 +86,7 @@ public:
    *
    * \return true on success, false otherwise
    */
-  virtual bool init(std::string default_ip = "", int default_port = StandardSocketPorts::MOTION, bool version_0 = false);
+  virtual bool init(ros::NodeHandle nh, std::string default_ip = "", int default_port = StandardSocketPorts::MOTION, bool version_0 = false);
 
   /**
    * \brief Initialize robot connection using specified method.

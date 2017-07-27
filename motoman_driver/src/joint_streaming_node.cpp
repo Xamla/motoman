@@ -40,11 +40,11 @@ int main(int argc, char** argv)
 
   // initialize node
   ros::init(argc, argv, "motion_interface");
-
+  ros::NodeHandle pn("~");
   // launch the FS100 JointTrajectoryStreamer connection/handlers
   MotomanJointTrajectoryStreamer motionInterface;
 
-  motionInterface.init("", FS100_motion_port, false);
+  motionInterface.init(pn,"", FS100_motion_port, false);
   motionInterface.run();
 
   return 0;

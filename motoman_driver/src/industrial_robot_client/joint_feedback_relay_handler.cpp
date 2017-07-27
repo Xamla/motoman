@@ -96,7 +96,7 @@ bool JointFeedbackRelayHandler::create_messages(SimpleMessage& msg_in,
     LOG_ERROR("Failed to convert SimpleMessage");
     return false;
   }
-  
+
 
   //ROS_ERROR("create_message, decoded pos: %d, group count: %d, robot id: %d", all_joint_state.positions.size(), robot_groups_.size(), robot_id);  // ##
 
@@ -109,7 +109,7 @@ bool JointFeedbackRelayHandler::create_messages(SimpleMessage& msg_in,
   }
 
   //ROS_ERROR("after transform, decoded pos: %d, group count: %d, robot id: %d", xform_joint_state.positions.size(), robot_groups_.size(), robot_id); // ##
-  
+
 
   //ROS_ERROR("create_message, decoded pos: %d", all_joint_state.positions.size());
   //for (int i=0; i<all_joint_state.positions.size(); ++i) {
@@ -131,15 +131,16 @@ bool JointFeedbackRelayHandler::create_messages(SimpleMessage& msg_in,
   control_state->header.stamp = ros::Time::now();
   control_state->joint_names = pub_joint_names;
   control_state->actual.positions = pub_joint_state.positions;
-  control_state->actual.velocities = pub_joint_state.velocities;
-  control_state->actual.accelerations = pub_joint_state.accelerations;
+  //control_state->actual.velocities = pub_joint_state.velocities;
+  //control_state->actual.accelerations = pub_joint_state.accelerations;
   control_state->actual.time_from_start = pub_joint_state.time_from_start;
 
   *sensor_state = sensor_msgs::JointState();  // always start with a "clean" message
   sensor_state->header.stamp = ros::Time::now();
   sensor_state->name = pub_joint_names;
   sensor_state->position = pub_joint_state.positions;
-  sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->effort = pub_joint_state.accelerations;
 
   this->pub_controls_[robot_id].publish(*control_state);
   this->pub_states_[robot_id].publish(*sensor_state);
@@ -197,7 +198,7 @@ bool JointFeedbackRelayHandler::convert_message(JointFeedbackMessage& msg_in, Dy
   // copy position data
   if (msg_in.getPositions(values))
   {
-    
+
     if (!JointDataToVector(values, joint_state->positions, num_jnts))
     {
       LOG_ERROR("Failed to parse position data from JointFeedbackMessage");

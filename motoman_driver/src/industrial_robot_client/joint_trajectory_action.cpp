@@ -60,12 +60,13 @@ JointTrajectoryAction::JointTrajectoryAction() :
   pn.param("constraints/goal_threshold", goal_threshold_, DEFAULT_GOAL_THRESHOLD_);
 
   std::map<int, RobotGroup> robot_groups;
-  getJointGroups("topic_list", robot_groups);
+  getJointGroups(this->node_.getNamespace() + "/topic_list", robot_groups);
 
   for (int i = 0; i < robot_groups.size(); i++)
   {
 
     std::string joint_path_action_name = robot_groups[i].get_ns() + "/" + robot_groups[i].get_name();
+    ROS_DEBUG_STREAM("group id: "<<i<<" "<< "action name: "<< joint_path_action_name);
     std::vector<std::string> rg_joint_names = robot_groups[i].get_joint_names();
     int group_number_int = robot_groups[i].get_group_id();
 
@@ -295,7 +296,7 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
         dyn_group.num_joints = num_joints;
       }*/
 
-      
+
     }
     dpoint.num_groups = dpoint.groups.size();
     dyn_traj.points.push_back(dpoint);

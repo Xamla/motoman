@@ -54,14 +54,15 @@ RobotStateInterface::RobotStateInterface()
   this->add_handler(&default_robot_status_handler_);
 }
 
-bool RobotStateInterface::init(std::string default_ip, int default_port, bool version_0)
+bool RobotStateInterface::init(ros::NodeHandle nh, std::string default_ip, int default_port, bool version_0)
 {
   std::string ip;
   int port;
-
   // override IP/port with ROS params, if available
-  ros::param::param<std::string>("robot_ip_address", ip, default_ip);
-  ros::param::param<int>("~port", port, default_port);
+  //ros::param::param<std::string>("robot_ip_address", ip, default_ip);
+  //ros::param::param<int>("~port", port, default_port);
+  nh.param("robot_ip_address", ip, default_ip);
+  nh.param("port", port, default_port);
   // check for valid parameter values
   if (ip.empty())
   {
@@ -85,7 +86,7 @@ bool RobotStateInterface::init(std::string default_ip, int default_port, bool ve
 bool RobotStateInterface::init(SmplMsgConnection* connection)
 {
   std::map<int, RobotGroup> robot_groups;
-  if(getJointGroups("topic_list", robot_groups))
+  if(getJointGroups(ros::this_node::getNamespace() + "/topic_list", robot_groups))
   {
     this->version_0_ = false;
     return init(connection, robot_groups);
@@ -149,7 +150,7 @@ bool RobotStateInterface::init(SmplMsgConnection* connection, std::map<int, Robo
 
   ROS_INFO("Successfully initialized robot state interface");
   return true;
-  
+
 }
 
 bool RobotStateInterface::init(SmplMsgConnection* connection, std::vector<std::string>& joint_names)

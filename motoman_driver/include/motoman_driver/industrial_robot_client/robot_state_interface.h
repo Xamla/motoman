@@ -87,7 +87,7 @@ public:
    *
    * \return true on success, false otherwise
    */
-  bool init(std::string default_ip = "", int default_port = StandardSocketPorts::STATE, bool legacy_mode = false);
+  bool init(ros::NodeHandle nh, std::string default_ip = "", int default_port = StandardSocketPorts::STATE, bool legacy_mode = false);
 
   /**
    * \brief Initialize robot connection using specified method.

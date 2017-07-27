@@ -39,10 +39,10 @@ int main(int argc, char** argv)
 
   // initialize node
   ros::init(argc, argv, "state_interface");
-
+  ros::NodeHandle pn("~");
   // launch the default Robot State Interface connection/handlers
   RobotStateInterface rsi;
-  if (rsi.init("", FS100_state_port, false))
+  if (rsi.init(pn,"", FS100_state_port, false))
   {
     rsi.run();
   }

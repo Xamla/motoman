@@ -53,14 +53,16 @@ namespace joint_trajectory_interface
 
 #define ROS_ERROR_RETURN(rtn,...) do {ROS_ERROR(__VA_ARGS__); return(rtn);} while(0)
 
-bool JointTrajectoryInterface::init(std::string default_ip, int default_port, bool version_0)
+bool JointTrajectoryInterface::init(ros::NodeHandle nh, std::string default_ip, int default_port, bool version_0)
 {
   std::string ip;
   int port;
-
+  this->node_ = nh;
   // override IP/port with ROS params, if available
-  ros::param::param<std::string>("robot_ip_address", ip, default_ip);
-  ros::param::param<int>("~port", port, default_port);
+  nh.param("robot_ip_address", ip, default_ip);
+  nh.param("port", port, default_port);
+  //ros::param::param<std::string>("robot_ip_address", ip, default_ip);
+  //ros::param::param<int>("~port", port, default_port);
 
   // check for valid parameter values
   if (ip.empty())
@@ -70,7 +72,7 @@ bool JointTrajectoryInterface::init(std::string default_ip, int default_port, bo
   }
   if (port <= 0)
   {
-    ROS_ERROR("No valid robot TCP port found.  Please set ROS '~port' param");
+    ROS_ERROR("No valid robot TCP port found.  Please set ROS 'port' param");
     return false;
   }
 
@@ -85,7 +87,7 @@ bool JointTrajectoryInterface::init(std::string default_ip, int default_port, bo
 bool JointTrajectoryInterface::init(SmplMsgConnection* connection)
 {
   std::map<int, RobotGroup> robot_groups;
-  if(getJointGroups("topic_list", robot_groups))
+  if(getJointGroups(ros::this_node::getNamespace() + "/topic_list", robot_groups))
   {
     this->version_0_ = false;
     return init(connection, robot_groups);
@@ -124,7 +126,7 @@ bool JointTrajectoryInterface::init(SmplMsgConnection* connection, const std::ve
   this->sub_joint_trajectory_ = this->node_.subscribe(
                                   "joint_path_command", 0, &JointTrajectoryInterface::jointTrajectoryCB, this);
   this->sub_cur_pos_ = this->node_.subscribe(
-                         "joint_states", 1, &JointTrajectoryInterface::jointStateCB, this);
+                         "/joint_states", 1, &JointTrajectoryInterface::jointStateCB, this);
 
   return true;
 }

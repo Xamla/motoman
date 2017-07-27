@@ -58,7 +58,7 @@ bool JointFeedbackExRelayHandler::init(SmplMsgConnection* connection,
   this->dynamic_pub_joint_control_state_ =
     this->node_.advertise<motoman_msgs::DynamicJointTrajectoryFeedback>("dynamic_feedback_states", 1);
 
-  this->pub_joint_sensor_state_ = this->node_.advertise<sensor_msgs::JointState>("joint_states", 1);
+  this->pub_joint_sensor_state_ = this->node_.advertise<sensor_msgs::JointState>("/joint_states", 1);
 
   this->robot_groups_ = robot_groups;
   this->version_0_ = false;
@@ -101,7 +101,7 @@ bool JointFeedbackExRelayHandler::create_messages(SimpleMessage& msg_in,
     bool pos_ok = msgs[i].getPositions(pos);
     bool vel_ok = msgs[i].getVelocities(vel);
     bool acc_ok = msgs[i].getAccelerations(acc);
-    
+
     // ROS_ERROR("msg %d: len: %d; group: %d; pos:%s, vel:%s, acc:%s", i, msgs[i].byteLength(), msgs[i].getRobotID(), pos_ok ? "true":"false", vel_ok ? "true":"false", acc_ok ? "true":"false"); // ##
     //for (int i=0; i<pos.getMaxNumJoints(); ++i)
     //{
@@ -109,7 +109,7 @@ bool JointFeedbackExRelayHandler::create_messages(SimpleMessage& msg_in,
     //  ROS_ERROR("%d: %f", i, p);
     //}
   }
-  
+
   motoman_msgs::DynamicJointTrajectoryFeedback dynamic_control_state;
 
   for (int i = 0; i < tmp_msg.getJointMessages().size(); i++)
@@ -165,8 +165,8 @@ bool JointFeedbackExRelayHandler::create_messages(JointFeedbackMessage& msg_in,
   control_state->header.stamp = ros::Time::now();
   control_state->joint_names = pub_joint_names;
   control_state->actual.positions = pub_joint_state.positions;
-  control_state->actual.velocities = pub_joint_state.velocities;
-  control_state->actual.accelerations = pub_joint_state.accelerations;
+  //control_state->actual.velocities = pub_joint_state.velocities;
+  //control_state->actual.accelerations = pub_joint_state.accelerations;
   control_state->actual.time_from_start = pub_joint_state.time_from_start;
 
   this->pub_joint_control_state_.publish(*control_state);
@@ -175,7 +175,8 @@ bool JointFeedbackExRelayHandler::create_messages(JointFeedbackMessage& msg_in,
   sensor_state->header.stamp = ros::Time::now();
   sensor_state->name = pub_joint_names;
   sensor_state->position = pub_joint_state.positions;
-  sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->velocity = pub_joint_state.velocities;
+  //sensor_state->effort = pub_joint_state.accelerations;
 
   this->pub_joint_sensor_state_.publish(*sensor_state);
 
@@ -186,7 +187,7 @@ bool JointFeedbackExRelayHandler::create_messages(JointFeedbackMessage& msg_in,
 bool JointFeedbackExRelayHandler::convert_message(JointFeedbackMessage& msg_in, DynamicJointsGroup* joint_state, int robot_id)
 {
   JointData values;
-  
+
   int num_jnts = robot_groups_[robot_id].get_joint_names().size();
   //ROS_ERROR("[JointFeedbackExRelayHandler] create JointFeedbackMessage robot_id = %d, num_jnts = %d", robot_id, num_jnts); // ##
   // copy position data

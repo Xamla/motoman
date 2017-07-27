@@ -128,9 +128,9 @@ bool MotomanJointTrajectoryStreamer::disableRobotCB(std_srvs::Trigger::Request &
 
   trajectoryStop();
 
-  bool ret = motion_ctrl_.setTrajMode(false);  
+  bool ret = motion_ctrl_.setTrajMode(false);
   res.success = ret;
-  
+
   if (!res.success) {
     res.message="Motoman robot was NOT disabled. Please re-examine and retry.";
     ROS_ERROR_STREAM(res.message);
@@ -139,7 +139,7 @@ bool MotomanJointTrajectoryStreamer::disableRobotCB(std_srvs::Trigger::Request &
     res.message="Motoman robot is now disabled and will NOT accept motion commands.";
     ROS_WARN_STREAM(res.message);
   }
-    
+
 
   return true;
 
@@ -148,9 +148,9 @@ bool MotomanJointTrajectoryStreamer::disableRobotCB(std_srvs::Trigger::Request &
 bool MotomanJointTrajectoryStreamer::enableRobotCB(std_srvs::Trigger::Request &req,
 						   std_srvs::Trigger::Response &res)
 {
-  bool ret = motion_ctrl_.setTrajMode(true);  
+  bool ret = motion_ctrl_.setTrajMode(true);
   res.success = ret;
-  
+
   if (!res.success) {
     res.message="Motoman robot was NOT enabled. Please re-examine and retry.";
     ROS_ERROR_STREAM(res.message);
@@ -165,7 +165,7 @@ bool MotomanJointTrajectoryStreamer::enableRobotCB(std_srvs::Trigger::Request &r
 }
 
 
-  
+
 // override create_message to generate JointTrajPtFull message (instead of default JointTrajPt)
 bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_msgs::JointTrajectoryPoint &pt, SimpleMessage *msg)
 {
@@ -484,7 +484,7 @@ bool MotomanJointTrajectoryStreamer::VectorToJointData(const std::vector<double>
   }
   return true;
 }
-  
+
 // override send_to_robot to provide controllerReady() and setTrajMode() calls
 bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessage>& messages)
 {
@@ -507,8 +507,12 @@ bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessa
         max_acc[0], max_acc[1], max_acc[2], max_acc[3],
         max_acc[4], max_acc[5], max_acc[6], max_acc[7]
       );
-      //memset(&max_acc, 0, sizeof(max_acc));
-      //this->motion_ctrl_.setMaxAcc(0, max_acc);
+
+      for (int i=0; i < 10; ++i)
+      {
+        max_acc[i] = 0.25;
+      }
+      this->motion_ctrl_.setMaxAcc(0, max_acc);
    }
    else
    {
@@ -553,7 +557,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
     switch (this->state_)
     {
     case TransferStates::IDLE:
-      ros::Duration(0.0250).sleep();  //  slower loop while waiting for new trajectory
+      ros::Duration(0.01).sleep();  //  slower loop while waiting for new trajectory
       break;
 
     case TransferStates::STREAMING:
@@ -639,10 +643,10 @@ void MotomanJointTrajectoryStreamer::streamingThread()
         tmpMsg = this->streaming_queue_.front();
         msg.init(tmpMsg.getMessageType(), CommTypes::SERVICE_REQUEST,
                  ReplyTypes::INVALID, tmpMsg.getData());  // set commType=REQUEST
-            
+
         ROS_INFO("Sending joint trajectory point");
         if (this->connection_->sendAndReceiveMsg(msg, reply, false))
-        {         
+        {
           MotionReplyMessage reply_status;
           if (!reply_status.init(reply))
           {
@@ -660,7 +664,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
             this->streaming_queue_.pop();
           }
           else if (reply_status.reply_.getResult() == MotionReplyResults::BUSY)
-          {  
+          {
             ROS_INFO("silently resending.");
             break;  // silently retry sending this point
           }
