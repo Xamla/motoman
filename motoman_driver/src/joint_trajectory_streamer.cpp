@@ -498,7 +498,7 @@ bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessa
  void MotomanJointTrajectoryStreamer::setStreamingMode(bool enable)
  {
    // ## debug output (group 0 hard coded)
-   float max_acc[10];
+   /*float max_acc[10];
    memset(&max_acc, 0, sizeof(max_acc));
    if (this->motion_ctrl_.getMaxAcc(0, max_acc))
    {
@@ -510,7 +510,7 @@ bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessa
 
       for (int i=0; i < 10; ++i)
       {
-        max_acc[i] = 0.25;
+        max_acc[i] = 0.25; //TODO set acc
       }
       this->motion_ctrl_.setMaxAcc(0, max_acc);
    }
@@ -518,7 +518,7 @@ bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessa
    {
      ROS_ERROR("Querying max_acceleration param failed.");
    }
-
+*/
    this->motion_ctrl_.setStreamMode(enable);
  }
 

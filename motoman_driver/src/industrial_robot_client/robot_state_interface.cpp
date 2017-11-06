@@ -61,22 +61,22 @@ bool RobotStateInterface::init(ros::NodeHandle nh, std::string default_ip, int d
   // override IP/port with ROS params, if available
   //ros::param::param<std::string>("robot_ip_address", ip, default_ip);
   //ros::param::param<int>("~port", port, default_port);
-  nh.param("robot_ip_address", ip, default_ip);
-  nh.param("port", port, default_port);
+  nh.param(ros::this_node::getNamespace() + "/robot_ip_address", ip, default_ip);
+  nh.param(ros::this_node::getNamespace() + "/port", port, default_port);
   // check for valid parameter values
   if (ip.empty())
   {
-    ROS_ERROR("No valid robot IP address found.  Please set ROS 'robot_ip_address' param");
+    ROS_ERROR("[RobotStateInterface] No valid robot IP address found.  Please set ROS 'robot_ip_address' param to %s", ros::this_node::getNamespace() + "/robot_ip_address");
     return false;
   }
   if (port <= 0)
   {
-    ROS_ERROR("No valid robot TCP port found.  Please set ROS '~port' param");
+    ROS_ERROR("[RobotStateInterface] No valid robot TCP port found.  Please set ROS '~port' param");
     return false;
   }
 
   char* ip_addr = strdup(ip.c_str());  // connection.init() requires "char*", not "const char*"
-  ROS_INFO("Robot state connecting to IP address: '%s:%d'", ip_addr, port);
+  ROS_INFO("[RobotStateInterface] Robot state connecting to IP address: '%s:%d'", ip_addr, port);
   default_tcp_connection_.init(ip_addr, port);
   free(ip_addr);
 
