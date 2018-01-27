@@ -160,6 +160,11 @@ private:
    */
   double goal_threshold_;
 
+  uint no_motion_threshold; // after zero veloctiy number of cicles (considered converged)
+  uint no_motion_counter;
+  bool robot_converged;
+  std::vector<double> last_position;
+
   /**
    * \brief The joint names associated with the robot the action is
    * interfacing with.  The joint names must be the same as expected
@@ -267,6 +272,8 @@ private:
   void abortGoal();
 
   void abortGoal(int robot_id);
+
+  double getMeanDistance(const std::vector<double> & lhs, const std::vector<double> & rhs);
 
   /**
    * \brief Controller status callback (executed when robot status

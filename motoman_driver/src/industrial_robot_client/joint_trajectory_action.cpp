@@ -48,7 +48,7 @@ namespace joint_trajectory_action
 {
 
 const double JointTrajectoryAction::WATCHD0G_PERIOD_ = 1.0;
-const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 0.1;
+const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 1e-3;
 
 JointTrajectoryAction::JointTrajectoryAction() :
   action_server_(node_, "joint_trajectory_action",
@@ -56,6 +56,9 @@ JointTrajectoryAction::JointTrajectoryAction() :
                  boost::bind(&JointTrajectoryAction::cancelCB, this, _1), false)
 {
   ros::NodeHandle pn("~");
+  this->no_motion_threshold = 10;
+  this->no_motion_counter = 0;
+  this->robot_converged = false;
 
   pn.param("constraints/goal_threshold", goal_threshold_, DEFAULT_GOAL_THRESHOLD_);
 
@@ -193,7 +196,6 @@ void JointTrajectoryAction::watchdog(const ros::TimerEvent &e, int group_number)
 void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
 {
   gh.setAccepted();
-
   int group_number;
 
 // TODO(thiagodefreitas): change for getting the id from the group instead of a sequential checking on the map
@@ -482,40 +484,68 @@ void JointTrajectoryAction::controllerStateCB(
   // Checking for goal constraints
   // Checks that we have ended inside the goal constraints and has motion stopped
 
-  ROS_INFO("B Checking goal constraints");
+  //ROS_INFO("B Checking goal constraints");
+  int last_point = current_traj_map_[robot_id].points.size() - 1;
+  //printf("goal: %f \n", this->getMeanDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
+  if (this->no_motion_counter == 0)
+  {
+    this->last_position = last_trajectory_state_map_[robot_id]->actual.positions;
+  }
+
   if (withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
   {
-    if (last_robot_status_)
-    {
-      // Additional check for motion stoppage since the controller goal may still
-      // be moving.  The current robot driver calls a motion stop if it receives
-      // a new trajectory while it is still moving.  If the driver is not publishing
-      // the motion state (i.e. old driver), this will still work, but it warns you.
-      if (last_robot_status_->in_motion.val == industrial_msgs::TriState::FALSE)
+      if (this->getMeanDistance(last_trajectory_state_map_[robot_id]->actual.positions, this->last_position) < 1e-3)
       {
-        ROS_INFO("Inside goal constraints, stopped moving, return success for action");
-        active_goal_map_[robot_id].setSucceeded();
-        has_active_goal_map_[robot_id] = false;
-      }
-      else if (last_robot_status_->in_motion.val == industrial_msgs::TriState::UNKNOWN)
-      {
-        ROS_INFO("Inside goal constraints, return success for action");
-        ROS_WARN("Robot status in motion unknown, the robot driver node and controller code should be updated");
-        active_goal_map_[robot_id].setSucceeded();
-        has_active_goal_map_[robot_id] = false;
+          this->no_motion_counter++;
       }
       else
       {
-        ROS_DEBUG("Within goal constraints but robot is still moving");
+          this->no_motion_counter = 0;
       }
-    }
-    else
+
+    this->robot_converged = this->no_motion_counter > this->no_motion_threshold;
+
+    printf("Convergence counter = %d\n", this->no_motion_counter);
+    if (this->robot_converged)
     {
-      ROS_INFO("Inside goal constraints, return success for action");
-      ROS_WARN("Robot status is not being published the robot driver node and controller code should be updated");
-      active_goal_map_[robot_id].setSucceeded();
-      has_active_goal_map_[robot_id] = false;
+        if (last_robot_status_ )
+        {
+            // Additional check for motion stoppage since the controller goal may still
+            // be moving.  The current robot driver calls a motion stop if it receives
+            // a new trajectory while it is still moving.  If the driver is not publishing
+            // the motion state (i.e. old driver), this will still work, but it warns you.
+            if (last_robot_status_->in_motion.val == industrial_msgs::TriState::FALSE)
+            {
+                ROS_INFO("Inside goal constraints, stopped moving, return success for action");
+                active_goal_map_[robot_id].setSucceeded();
+                has_active_goal_map_[robot_id] = false;
+            }
+            else if (last_robot_status_->in_motion.val == industrial_msgs::TriState::UNKNOWN)
+            {
+                ROS_INFO("Inside goal constraints, return success for action");
+                ROS_WARN("Robot status in motion unknown, the robot driver node and controller code should be updated");
+                active_goal_map_[robot_id].setSucceeded();
+                has_active_goal_map_[robot_id] = false;
+            }
+            else
+            {
+                ROS_DEBUG("Within goal constraints but robot is still moving");
+            }
+        }
+        else
+        {
+            ROS_INFO("Inside goal constraints, return success for action");
+            ROS_WARN("Robot status is not being published the robot driver node and controller code should be updated");
+            active_goal_map_[robot_id].setSucceeded();
+            has_active_goal_map_[robot_id] = false;
+        }
     }
+  }
+  else
+  {
+      ROS_INFO_THROTTLE(0.1, "goal: %f \n", this->getMeanDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
+      this->no_motion_counter = 0;
+      this->robot_converged = false;
   }
 }
 
@@ -603,6 +633,26 @@ void JointTrajectoryAction::abortGoal(int robot_id)
   // Marks the current goal as aborted.
   active_goal_map_[robot_id].setAborted();
   has_active_goal_map_[robot_id] = false;
+}
+
+double JointTrajectoryAction::getMeanDistance(const std::vector<double> & lhs, const std::vector<double> & rhs)
+{
+    double rtn = 0;
+    if (lhs.size() != rhs.size())
+    {
+        ROS_ERROR_STREAM(__FUNCTION__ << "::lhs size: " << lhs.size() << " does not match rhs size: " << rhs.size());
+        rtn = -1;
+    }
+    else
+    {
+     // This loop will not run for empty vectors, results in return of true
+     for (size_t i = 0; i < lhs.size(); ++i)
+     {
+       rtn = std::max(rtn, fabs(lhs[i] - rhs[i]));
+     }
+     printf("Max error: %f \n", rtn);
+   }
+   return rtn;
 }
 
 bool JointTrajectoryAction::withinGoalConstraints(
