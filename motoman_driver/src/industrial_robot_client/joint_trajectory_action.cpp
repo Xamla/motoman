@@ -56,7 +56,7 @@ JointTrajectoryAction::JointTrajectoryAction() :
                  boost::bind(&JointTrajectoryAction::cancelCB, this, _1), false)
 {
   ros::NodeHandle pn("~");
-  this->no_motion_threshold = 10;
+  this->no_motion_threshold = 15;
   this->no_motion_counter = 0;
   this->robot_converged = false;
 
@@ -486,7 +486,7 @@ void JointTrajectoryAction::controllerStateCB(
 
   //ROS_INFO("B Checking goal constraints");
   int last_point = current_traj_map_[robot_id].points.size() - 1;
-  //printf("goal: %f \n", this->getMeanDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
+  //printf("goal: %f \n", this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
   if (this->no_motion_counter == 0)
   {
     this->last_position = last_trajectory_state_map_[robot_id]->actual.positions;
@@ -494,7 +494,7 @@ void JointTrajectoryAction::controllerStateCB(
 
   if (withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
   {
-      if (this->getMeanDistance(last_trajectory_state_map_[robot_id]->actual.positions, this->last_position) < 1e-3)
+      if (this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, this->last_position) < 1e-3)
       {
           this->no_motion_counter++;
       }
@@ -516,7 +516,7 @@ void JointTrajectoryAction::controllerStateCB(
             // the motion state (i.e. old driver), this will still work, but it warns you.
             if (last_robot_status_->in_motion.val == industrial_msgs::TriState::FALSE)
             {
-                ROS_INFO("Inside goal constraints, stopped moving, return success for action");
+                ROS_INFO("Inside goal constraints, stopped moving, return success for action, robot_id = %d", robot_id);
                 active_goal_map_[robot_id].setSucceeded();
                 has_active_goal_map_[robot_id] = false;
             }
@@ -543,7 +543,7 @@ void JointTrajectoryAction::controllerStateCB(
   }
   else
   {
-      ROS_INFO_THROTTLE(0.1, "goal: %f \n", this->getMeanDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
+      ROS_INFO_THROTTLE(0.1, "goal: %f \n", this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
       this->no_motion_counter = 0;
       this->robot_converged = false;
   }
@@ -635,7 +635,7 @@ void JointTrajectoryAction::abortGoal(int robot_id)
   has_active_goal_map_[robot_id] = false;
 }
 
-double JointTrajectoryAction::getMeanDistance(const std::vector<double> & lhs, const std::vector<double> & rhs)
+double JointTrajectoryAction::getMaxPerAxisDistance(const std::vector<double> & lhs, const std::vector<double> & rhs)
 {
     double rtn = 0;
     if (lhs.size() != rhs.size())

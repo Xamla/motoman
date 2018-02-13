@@ -273,7 +273,7 @@ private:
 
   void abortGoal(int robot_id);
 
-  double getMeanDistance(const std::vector<double> & lhs, const std::vector<double> & rhs);
+  double getMaxPerAxisDistance(const std::vector<double> & lhs, const std::vector<double> & rhs);
 
   /**
    * \brief Controller status callback (executed when robot status
