@@ -46,6 +46,8 @@
 #include <industrial_msgs/RobotStatus.h>
 #include <motoman_driver/industrial_robot_client/robot_group.h>
 #include <motoman_msgs/DynamicJointTrajectory.h>
+
+#include "motoman_driver/industrial_robot_client/robot_feedback_monitor.h"
 namespace industrial_robot_client
 {
 namespace joint_trajectory_action
@@ -164,13 +166,14 @@ private:
   uint no_motion_counter;
   bool robot_converged;
   std::vector<double> last_position;
-
+  ros::Time start_trajectory_execution;
   /**
    * \brief The joint names associated with the robot the action is
    * interfacing with.  The joint names must be the same as expected
    * by the robot driver.
    */
   std::vector<std::string> joint_names_;
+  RobotFeedbackMonitor full_robot_state;
 
   /**
    * \brief Cache of the last subscribed feedback message
@@ -293,6 +296,7 @@ private:
 
   bool withinGoalConstraints(const control_msgs::FollowJointTrajectoryFeedbackConstPtr &msg,
                              const motoman_msgs::DynamicJointTrajectory & traj);
+  bool withinGoalConstraints(const trajectory_msgs::JointTrajectory & traj);
 };
 
 }  // namespace joint_trajectory_action

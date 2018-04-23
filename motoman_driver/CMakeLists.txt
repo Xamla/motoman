@@ -74,6 +74,7 @@ set(CLIENT_SRC_FILES
   src/industrial_robot_client/joint_feedback_relay_handler.cpp
   src/industrial_robot_client/joint_feedback_ex_relay_handler.cpp
   src/industrial_robot_client/robot_state_interface.cpp
+  src/industrial_robot_client/robot_feedback_monitor.cpp
   src/industrial_robot_client/joint_trajectory_interface.cpp
   src/industrial_robot_client/joint_trajectory_streamer.cpp
   src/industrial_robot_client/motoman_utils.cpp
