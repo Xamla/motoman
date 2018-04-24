@@ -48,7 +48,7 @@ namespace joint_trajectory_action
 {
 
 const double JointTrajectoryAction::WATCHD0G_PERIOD_ = 1.0;
-const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 1e-3;
+const double JointTrajectoryAction::DEFAULT_GOAL_THRESHOLD_ = 1e-2;
 
 JointTrajectoryAction::JointTrajectoryAction() :
   action_server_(node_, "joint_trajectory_action",
@@ -56,7 +56,7 @@ JointTrajectoryAction::JointTrajectoryAction() :
                  boost::bind(&JointTrajectoryAction::cancelCB, this, _1), false)
 {
   ros::NodeHandle pn("~");
-  this->no_motion_threshold = 15;
+  this->no_motion_threshold = 0;
   this->no_motion_counter = 0;
   this->robot_converged = false;
 
