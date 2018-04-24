@@ -32,7 +32,7 @@
 
 #ifndef MOTOMAN_DRIVER_INDUSTRIAL_ROBOT_CLIENT_ROBOT_FEEDBACK_MONITOR_H
 #define MOTOMAN_DRIVER_INDUSTRIAL_ROBOT_CLIENT_ROBOT_FEEDBACK_MONITOR_H
-
+#include <boost/thread/mutex.hpp>
 #include <vector>
 #include <string>
 namespace industrial_robot_client
@@ -49,16 +49,19 @@ class RobotFeedbackMonitor
     std::vector<double> get_joint_values()
     {
         this->reset_updates();
+        boost::mutex::scoped_lock lock( this->mutex );
         return this->values_;
     }
 
     std::vector<std::string> get_joint_names()
     {
+        boost::mutex::scoped_lock lock( this->mutex );
         return this->joint_names_;
     }
 
     void set_joint_names(std::vector<std::string> jnames)
     {
+        boost::mutex::scoped_lock lock( this->mutex );
         this->joint_names_ = jnames;
     }
 
@@ -73,6 +76,7 @@ class RobotFeedbackMonitor
     std::vector<std::string> joint_names_;
     std::vector<double> values_;
     std::vector<bool> updated_;
+    boost::mutex mutex;
     bool is_valid();
 };
 }

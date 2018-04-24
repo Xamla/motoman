@@ -21,6 +21,7 @@ namespace industrial_robot_client
     //Whenever values are read from monitor the values are marked as not updated
     std::vector<double> RobotFeedbackMonitor::select(const std::vector<std::string> & jnames)
     {
+      boost::mutex::scoped_lock lock( this->mutex );
       std::vector<double> result;
       for (int i = 0; i < jnames.size(); i++)
       {
@@ -43,6 +44,7 @@ namespace industrial_robot_client
     void RobotFeedbackMonitor::update_joint_values(const std::vector<std::string> & jnames, const std::vector<double> & values)
     {
       assert(this->is_valid() && jnames.size() == values.size());
+      boost::mutex::scoped_lock lock( this->mutex );
       for (int i = 0; i < jnames.size(); i++)
       {
         std::vector<std::string>::iterator it;
@@ -62,6 +64,7 @@ namespace industrial_robot_client
 
     bool RobotFeedbackMonitor::all_updated()
     {
+      boost::mutex::scoped_lock lock( this->mutex );
       for (int i = 0; i < this->updated_.size(); i++)
       {
         if (!this->updated_[i])
@@ -74,6 +77,7 @@ namespace industrial_robot_client
 
     void RobotFeedbackMonitor::reset_updates()
     {
+      boost::mutex::scoped_lock lock( this->mutex );
       for (int i = 0; i < updated_.size(); i++)
       {
         this->updated_[i] = false;
@@ -82,6 +86,7 @@ namespace industrial_robot_client
 
     bool RobotFeedbackMonitor::is_valid()
     {
+      boost::mutex::scoped_lock lock( this->mutex );
       return this->updated_.size() == this->joint_names_.size() && this->values_.size() == this->joint_names_.size();
     }
   }
