@@ -35,6 +35,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <xamla_sysmon_msgs/statuscodes.h>
+#include <xamla_sysmon_msgs/HeartBeat.h>
 #include "motoman_driver/motion_ctrl.h"
 #include "motoman_driver/industrial_robot_client/joint_trajectory_streamer.h"
 #include "simple_message/joint_data.h"
@@ -156,6 +158,13 @@ protected:
    * incoming goals are ignored.
    */
   ros::ServiceServer enabler_;
+
+  /**
+   * \brief Publisher used to signal monitor if the driver is ready
+   */
+  ros::Publisher pub_heartbeat_;
+  xamla_sysmon_msgs::HeartBeat heartbeat_msg_;
+  ros::Time last_published_heartbeat;
 
   /**
    * \brief Disable the robot. Response is true if the state was flipped or

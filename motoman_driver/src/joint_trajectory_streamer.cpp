@@ -39,6 +39,7 @@
 #include <vector>
 #include <string>
 
+
 namespace CommTypes = industrial::simple_message::CommTypes;
 namespace ReplyTypes = industrial::simple_message::ReplyTypes;
 using industrial::joint_data::JointData;
@@ -90,6 +91,12 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection* connection, const s
 
   enabler_ = node_.advertiseService("/robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
 
+  pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
+  this->heartbeat_msg_.header.stamp = ros::Time::now();
+  this->heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
+  this->heartbeat_msg_.details = TopicHeartbeatStatus::generateMessageText(TopicHeartbeatStatus::intToStatusCode(heartbeat_msg_.status));
+  pub_heartbeat_.publish(heartbeat_msg_);
+  last_published_heartbeat = ros::Time::now();
   return rtn;
 }
 
@@ -113,6 +120,7 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection* connection, const s
 
   enabler_ = node_.advertiseService("/robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
 
+  //pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
   return rtn;
 }
 
@@ -128,6 +136,7 @@ bool MotomanJointTrajectoryStreamer::disableRobotCB(std_srvs::Trigger::Request &
 
   trajectoryStop();
 
+  boost::mutex::scoped_lock lock( this->mutex_ );
   bool ret = motion_ctrl_.setTrajMode(false);
   res.success = ret;
 
@@ -148,6 +157,8 @@ bool MotomanJointTrajectoryStreamer::disableRobotCB(std_srvs::Trigger::Request &
 bool MotomanJointTrajectoryStreamer::enableRobotCB(std_srvs::Trigger::Request &req,
 						   std_srvs::Trigger::Response &res)
 {
+
+   boost::mutex::scoped_lock lock( this->mutex_ );
   bool ret = motion_ctrl_.setTrajMode(true);
   res.success = ret;
 
@@ -488,8 +499,11 @@ bool MotomanJointTrajectoryStreamer::VectorToJointData(const std::vector<double>
 // override send_to_robot to provide controllerReady() and setTrajMode() calls
 bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessage>& messages)
 {
-  if (!motion_ctrl_.controllerReady())
-    ROS_ERROR_RETURN(false, "Failed to initialize MotoRos motion, so trajectory ABORTED.\n If safe, call /robot_enable service to (re-)enable Motoplus motion.");
+  {
+    boost::mutex::scoped_lock lock( this->mutex_ );
+    if (!motion_ctrl_.controllerReady())
+      ROS_ERROR_RETURN(false, "Failed to initialize MotoRos motion, so trajectory ABORTED.\n If safe, call /robot_enable service to (re-)enable Motoplus motion.");
+  }
 
   return JointTrajectoryStreamer::send_to_robot(messages);
 }
@@ -553,6 +567,26 @@ void MotomanJointTrajectoryStreamer::streamingThread()
     this->mutex_.lock();
 
     SimpleMessage msg, tmpMsg, reply;
+
+    heartbeat_msg_.header.stamp = ros::Time::now();
+    if (!motion_ctrl_.controllerReady())
+    {
+        heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
+        heartbeat_msg_.details = "Robot is not controller ready. If safe, call /robot_enable service to (re-)enable Motoplus motion.";
+    }
+    else
+    {
+        heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::GO);
+        heartbeat_msg_.details = "";
+    }
+
+    bool time_to_publish = ros::Time::now().toSec() - last_published_heartbeat.toSec() > 0.05;
+
+    if (time_to_publish)
+    {
+      this->pub_heartbeat_.publish(heartbeat_msg_);
+      last_published_heartbeat = ros::Time::now();
+    }
 
     switch (this->state_)
     {
@@ -700,6 +734,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
 // override trajectoryStop to send MotionCtrl message
 void MotomanJointTrajectoryStreamer::trajectoryStop()
 {
+  boost::mutex::scoped_lock lock( this->mutex_ );
   this->state_ = TransferStates::IDLE;  // stop sending trajectory points
   motion_ctrl_.stopTrajectory();
   this->setStreamingMode(false);

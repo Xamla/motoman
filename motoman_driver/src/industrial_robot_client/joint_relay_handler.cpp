@@ -55,7 +55,7 @@ bool JointRelayHandler::init(SmplMsgConnection* connection, int msg_type, std::m
   {
     std::string name_str, ns_str;
     int robot_id = iterator->first;
-    ROS_ERROR("init for ROBOT ID: %d", robot_id); // ##
+    ROS_INFO("init for ROBOT ID: %d", robot_id); // ##
     name_str = iterator->second.get_name();
     ns_str = iterator->second.get_ns();
 
@@ -68,7 +68,7 @@ bool JointRelayHandler::init(SmplMsgConnection* connection, int msg_type, std::m
     this->pub_states_[robot_id] = this->pub_joint_sensor_state_;
   }
 
-  ROS_ERROR("INIT DONE!!");
+  ROS_INFO("INIT DONE!!");
 
 
   return MessageHandler::init(msg_type, connection);

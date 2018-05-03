@@ -20,6 +20,8 @@ find_package(
     std_srvs
     trajectory_msgs
     urdf
+    xamla_sysmon_watch
+    xamla_sysmon_msgs
 )
 find_package(Boost REQUIRED COMPONENTS system thread)
 
@@ -30,6 +32,18 @@ roslint_cpp()
 include_directories(include MotoPlus inform ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 add_definitions(-DLINUXSOCKETS=1)  #use linux sockets for communication
 add_definitions(-DROS=1)
+add_definitions(-g)
+
+# C++11 Needed
+include(CheckCXXCompilerFlag)
+
+CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
+
+if(COMPILER_SUPPORTS_CXX14)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+else()
+    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. Please use a different C++ compiler.")
+endif()
 
 catkin_package(
   CATKIN_DEPENDS

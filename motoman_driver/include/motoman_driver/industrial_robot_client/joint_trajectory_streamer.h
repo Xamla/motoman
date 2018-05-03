@@ -143,7 +143,7 @@ protected:
   double time_of_last_;
   double time_since_last_;
 
-  static const double point_streaming_timeout = 0.5;
+  static constexpr double point_streaming_timeout = 0.5;
 
   virtual void setStreamingMode(bool enable) {}
 };
