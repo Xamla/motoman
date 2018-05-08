@@ -35,7 +35,8 @@
 #include "simple_message/smpl_msg_connection.h"
 #include "motoman_driver/simple_message/motoman_motion_ctrl.h"
 #include "motoman_driver/simple_message/motoman_motion_reply.h"
-
+#include "motoman_driver/simple_message/motoman_read_single_io_reply.h"
+#include "motoman_driver/simple_message/motoman_write_single_io_reply.h"
 namespace motoman
 {
 namespace motion_ctrl
@@ -43,6 +44,8 @@ namespace motion_ctrl
 using industrial::smpl_msg_connection::SmplMsgConnection;
 using motoman::simple_message::motion_reply::MotionReply;
 typedef motoman::simple_message::motion_ctrl::MotionControlCmd MotionControlCmd;
+using motoman::simple_message::io_ctrl_reply::ReadSingleIOReply;
+using motoman::simple_message::io_ctrl_reply::WriteSingleIOReply;
 
 /**
  * \brief Wrapper class around Motoman-specific motion control commands
@@ -68,7 +71,11 @@ public:
   bool stopTrajectory();
 
   static std::string getErrorString(const MotionReply &reply);
+  static std::string getErrorString(const ReadSingleIOReply &reply);
+  static std::string getErrorString(const WriteSingleIOReply &reply);
 
+  bool readFromIO(int address, int* value);
+  bool writeToIO(int address, int value);
 protected:
   SmplMsgConnection* connection_;
   int robot_id_;

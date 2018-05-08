@@ -15,6 +15,8 @@ add_message_files(
 add_service_files(
   FILES
   CmdJointTrajectoryEx.srv
+  WriteIO.srv
+  ReadIO.srv
   )
 
 generate_messages(

@@ -32,15 +32,39 @@
 #include "motoman_driver/motion_ctrl.h"
 #include "motoman_driver/simple_message/motoman_motion_ctrl_message.h"
 #include "motoman_driver/simple_message/motoman_motion_reply_message.h"
+
+#include "motoman_driver/simple_message/motoman_read_single_io.h"
+#include "motoman_driver/simple_message/motoman_read_single_io_reply.h"
+#include "motoman_driver/simple_message/messages/motoman_read_single_io_message.h"
+#include "motoman_driver/simple_message/messages/motoman_read_single_io_reply_message.h"
+
+#include "motoman_driver/simple_message/motoman_write_single_io.h"
+#include "motoman_driver/simple_message/motoman_write_single_io_reply.h"
+#include "motoman_driver/simple_message/messages/motoman_write_single_io_message.h"
+#include "motoman_driver/simple_message/messages/motoman_write_single_io_reply_message.h"
+
 #include "ros/ros.h"
 #include "simple_message/simple_message.h"
 #include <string>
 
 namespace MotionControlCmds = motoman::simple_message::motion_ctrl::MotionControlCmds;
 namespace MotionReplyResults = motoman::simple_message::motion_reply::MotionReplyResults;
+namespace ReadSingleIOReplyResults = motoman::simple_message::io_ctrl_reply::ReadSingleIOReplyResults;
+namespace WriteSingleIOReplyResults = motoman::simple_message::io_ctrl_reply::WriteSingleIOReplyResults;
 using motoman::simple_message::motion_ctrl::MotionCtrl;
 using motoman::simple_message::motion_ctrl_message::MotionCtrlMessage;
 using motoman::simple_message::motion_reply_message::MotionReplyMessage;
+
+using motoman::simple_message::io_ctrl::ReadSingleIO;
+using motoman::simple_message::io_ctrl_reply::ReadSingleIOReply;
+using motoman::simple_message::io_ctrl_reply_message::ReadSingleIOReplyMessage;
+using motoman::simple_message::io_ctrl_message::ReadSingleIOMessage;
+
+using motoman::simple_message::io_ctrl::WriteSingleIO;
+using motoman::simple_message::io_ctrl_reply::WriteSingleIOReply;
+using motoman::simple_message::io_ctrl_reply_message::WriteSingleIOReplyMessage;
+using motoman::simple_message::io_ctrl_message::WriteSingleIOMessage;
+
 using industrial::simple_message::SimpleMessage;
 
 namespace motoman
@@ -131,7 +155,7 @@ bool MotomanMotionCtrl::setMaxAcc(int groupNo, float* max_acc)
   {
     data.setData(i, max_acc[i]);
   }
-  
+
   ctrl_msg.init(data);
   ctrl_msg.toRequest(req);
 
@@ -217,6 +241,76 @@ bool MotomanMotionCtrl::sendAndReceive(MotionControlCmd command, MotionReply &re
   reply.copyFrom(ctrl_reply.reply_);
 
   return true;
+}
+
+bool MotomanMotionCtrl::writeToIO(int address, int value)
+{
+  WriteSingleIO data;
+  WriteSingleIOReply reply;
+  WriteSingleIOMessage ctrl_msg;
+  WriteSingleIOReplyMessage ctrl_reply;
+  data.init(address, value);
+  ctrl_msg.init(data);
+  SimpleMessage req, res;
+  ctrl_msg.toRequest(req);
+  if (!this->connection_->sendAndReceiveMsg(req, res))
+  {
+    ROS_ERROR("Failed to send message");
+    return false;
+  }
+  ctrl_reply.init(res);
+  reply.copyFrom(ctrl_reply.reply_);
+
+  if (reply.getResultCode() != WriteSingleIOReplyResults::SUCCESS)
+  {
+    ROS_ERROR_STREAM("Failed to write to IO: " << getErrorString(reply));
+    return false;
+  }
+
+  return true;
+}
+
+std::string MotomanMotionCtrl::getErrorString(const WriteSingleIOReply &reply)
+{
+  std::ostringstream ss;
+  ss << reply.getResultString() << " (" << reply.getResultCode() << ")";
+  return ss.str();
+}
+
+
+bool MotomanMotionCtrl::readFromIO(int address, int* value)
+{
+  ReadSingleIO data;
+  ReadSingleIOReply reply;
+  ReadSingleIOMessage ctrl_msg;
+  ReadSingleIOReplyMessage ctrl_reply;
+  data.init(address);
+  ctrl_msg.init(data);
+  SimpleMessage req, res;
+  ctrl_msg.toRequest(req);
+  if (!this->connection_->sendAndReceiveMsg(req, res))
+  {
+    ROS_ERROR("Failed to send message");
+    return false;
+  }
+  ctrl_reply.init(res);
+  reply.copyFrom(ctrl_reply.reply_);
+
+  if (reply.getResultCode() != ReadSingleIOReplyResults::SUCCESS)
+  {
+    ROS_ERROR_STREAM("Failed to read from IO: " << getErrorString(reply));
+    return false;
+  }
+
+  *value = reply.getValue();
+  return true;
+}
+
+std::string MotomanMotionCtrl::getErrorString(const ReadSingleIOReply &reply)
+{
+  std::ostringstream ss;
+  ss << reply.getResultString() << " (" << reply.getResultCode() << ")";
+  return ss.str();
 }
 
 std::string MotomanMotionCtrl::getErrorString(const MotionReply &reply)

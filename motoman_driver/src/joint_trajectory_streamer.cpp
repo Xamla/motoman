@@ -91,6 +91,10 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection* connection, const s
 
   enabler_ = node_.advertiseService("/robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
 
+  io_reader_ = node_.advertiseService("io_read", &MotomanJointTrajectoryStreamer::ioReadCB, this);
+
+  io_writer_ = node_.advertiseService("io_write", &MotomanJointTrajectoryStreamer::ioWriteCB, this);
+
   pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
   this->heartbeat_msg_.header.stamp = ros::Time::now();
   this->heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
@@ -175,7 +179,77 @@ bool MotomanJointTrajectoryStreamer::enableRobotCB(std_srvs::Trigger::Request &r
 
 }
 
+/*
+ * Valid Adresses (dx100)
+ * 10010 - 12567 Universal output #10010 - #12567(2048)
+ * 60010 - 60647 Interface panel #60010 - #60647(512)
+ * 25010 - 27567 Network input #25010 - #27567(2048)
+ * 1000000 - 1000559 Register #1000000 - #1000559(560)
+*/
 
+bool MotomanJointTrajectoryStreamer::ioReadCB(motoman_msgs::ReadIO::Request &req,
+						   motoman_msgs::ReadIO::Response &res)
+{
+  boost::mutex::scoped_lock lock( this->mutex_ );
+  int result = 0;
+  bool ret = motion_ctrl_.readFromIO(req.adress, &result);
+  res.success = ret;
+  res.value = result;
+
+  if (!res.success) {
+    res.message="Could not read from adress";
+    ROS_ERROR_STREAM(res.message);
+  }
+  else {
+    res.message="OK";
+    ROS_WARN_STREAM(res.message);
+  }
+
+  return true;
+}
+
+bool MotomanJointTrajectoryStreamer::ioWriteCB(motoman_msgs::WriteIO::Request &req,
+						   motoman_msgs::WriteIO::Response &res)
+{
+  int adress = req.adress;
+  if ( adress >= 10010 && adress <= 12567 )
+  {
+    ROS_INFO_STREAM("Write to Universal output: #" << adress);
+  }
+  else if ( adress >= 60010 && adress <= 60647 )
+  {
+    ROS_INFO_STREAM("Write to Interface panel: #" << adress);
+  }
+  else if ( adress >= 25010 && adress <= 27567 )
+  {
+    ROS_INFO_STREAM("Network input: #" << adress);
+  }
+  else if ( adress >= 1000000 && adress <= 1000559 )
+  {
+    ROS_INFO_STREAM("Register: #" << adress);
+  }
+  else
+  {
+    res.success = false;
+    res.message="Could not write in this specific adress. Out of bounds ";
+    ROS_ERROR_STREAM(res.message << adress);
+    return true;
+  }
+  boost::mutex::scoped_lock lock( this->mutex_ );
+
+  bool ret = motion_ctrl_.writeToIO(req.adress, req.value);
+  res.success = ret;
+
+  if (!res.success) {
+    res.message="Could not read from adress";
+    ROS_ERROR_STREAM(res.message);
+  }
+  else {
+    res.message="OK";
+  }
+
+  return true;
+}
 
 // override create_message to generate JointTrajPtFull message (instead of default JointTrajPt)
 bool MotomanJointTrajectoryStreamer::create_message(int seq, const trajectory_msgs::JointTrajectoryPoint &pt, SimpleMessage *msg)
