@@ -1,5 +1,4 @@
-uint64 adress
-uint64 value
 ---
 bool success
 string message # informational, e.g. for error messages
+string[] available_jobs

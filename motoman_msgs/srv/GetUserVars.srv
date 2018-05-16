@@ -1,0 +1,6 @@
+UserVarPrimitive[] variables # only var_type and var_no fields are used (value is ignored)
+---
+bool success
+string message # informational, e.g. for error messages
+int32 err_no
+UserVarPrimitive[] variables

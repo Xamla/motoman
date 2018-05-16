@@ -1,5 +1,5 @@
-uint64 adress
-uint64 value
+UserVarPrimitive[] variables
 ---
 bool success
 string message # informational, e.g. for error messages
+int32 err_no

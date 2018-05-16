@@ -1,0 +1,19 @@
+int16  task_no  # Task number: Always specify the master task, 0.
+string job_name	# Job name (up to 32 characters for a job name)
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # error code
+# 0x0000 Normal end
+# 0x2010 Robot is in operation
+# 0x2030 In HOLD status (PP)
+# 0x2040 In HOLD status (External)
+# 0x2050 In HOLD status (Command)
+# 0x2060 In error/alarm status
+# 0x2070 In SERVO OFF status
+# 0x2080 Wrong operation mode
+# 0x3040 The home position is not registered
+# 0x3050 Out of range (ABSO data)
+# 0x3400 Cannot operate MASTER JOB
+# 0x3410 The JOB name is already registered in another task.
+# 0x4040 Specified JOB not found

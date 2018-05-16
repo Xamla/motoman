@@ -1,0 +1,6 @@
+int16 task_no  # Task number
+int16 time	# Time (unit: sec)
+---
+bool success
+string message # informational, e.g. for error messages
+int32 err_no  # error code

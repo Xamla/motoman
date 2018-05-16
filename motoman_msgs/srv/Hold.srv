@@ -1,5 +1,4 @@
-uint64 adress
-uint64 value
+int16 hold # 1 Hold ON, 0 Hold OFF
 ---
 bool success
 string message # informational, e.g. for error messages

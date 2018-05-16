@@ -41,9 +41,8 @@
 #include "motoman_driver/industrial_robot_client/joint_trajectory_streamer.h"
 #include "simple_message/joint_data.h"
 #include "simple_message/simple_message.h"
-#include "std_srvs/Trigger.h"
-#include "motoman_msgs/ReadIO.h"
-#include "motoman_msgs/WriteIO.h"
+
+#include "motoman_driver/industrial_robot_client/motoman_ros_services.h"
 
 namespace motoman
 {
@@ -51,6 +50,7 @@ namespace joint_trajectory_streamer
 {
 
 using motoman::motion_ctrl::MotomanMotionCtrl;
+using motoman::ros_services::MotomanRosServices;
 using industrial_robot_client::joint_trajectory_streamer::JointTrajectoryStreamer;
 using industrial::simple_message::SimpleMessage;
 using industrial::smpl_msg_connection::SmplMsgConnection;
@@ -161,15 +161,7 @@ protected:
    */
   ros::ServiceServer enabler_;
 
-  /**
-   * \brief Service used to read io adresses in controller.
-   */
-  ros::ServiceServer io_reader_;
-
-  /**
-   * \brief Service used to write value to io adresse in controller.
-   */
-  ros::ServiceServer io_writer_;
+  MotomanRosServices::Ptr services_;
 
   /**
    * \brief Publisher used to signal monitor if the driver is ready
@@ -193,13 +185,6 @@ protected:
    */
   bool enableRobotCB(std_srvs::Trigger::Request &req,
                      std_srvs::Trigger::Response &res);
-
-  bool ioReadCB(motoman_msgs::ReadIO::Request &req,
-                     motoman_msgs::ReadIO::Response &res);
-
-  bool ioWriteCB(motoman_msgs::WriteIO::Request &req,
-                     motoman_msgs::WriteIO::Response &res);
-
 
   virtual void setStreamingMode(bool enable);
 };

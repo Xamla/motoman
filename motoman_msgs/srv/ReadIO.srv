@@ -1,7 +1,5 @@
-
-
 uint64 adress
 ---
-uint64 value
-string message
 bool success
+string message # informational, e.g. for error messages
+uint64 value

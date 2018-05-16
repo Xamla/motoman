@@ -1,0 +1,12 @@
+int32  job_line # Job line
+string job_name	# Job name (up to 32 characters for a job name)
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # error code
+# 0x0000 Normal end
+# 0x2060 In error/alarm status
+# 0x2010 Robot is in operation
+# 0x2110 Inaccessible data
+# 0x4040 Specified JOB not found
+# 0x5200 Over data range

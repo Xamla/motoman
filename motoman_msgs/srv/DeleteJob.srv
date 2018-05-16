@@ -1,0 +1,5 @@
+string job_name # Job name (up to 32 characters for a job name)
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # 0 Normal end, -1 Error

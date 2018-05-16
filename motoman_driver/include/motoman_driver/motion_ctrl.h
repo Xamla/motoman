@@ -32,11 +32,18 @@
 #ifndef MOTOMAN_DRIVER_MOTION_CTRL_H
 #define MOTOMAN_DRIVER_MOTION_CTRL_H
 
+#include <boost/thread/thread.hpp>
 #include "simple_message/smpl_msg_connection.h"
 #include "motoman_driver/simple_message/motoman_motion_ctrl.h"
 #include "motoman_driver/simple_message/motoman_motion_reply.h"
 #include "motoman_driver/simple_message/motoman_read_single_io_reply.h"
 #include "motoman_driver/simple_message/motoman_write_single_io_reply.h"
+#include "motoman_driver/simple_message/motoman_simple_rpc_reply.h"
+#include "motoman_driver/simple_message/motoman_simple_rpc.h"
+#include "motoman_msgs/PutUserVars.h"
+#include "motoman_msgs/GetUserVars.h"
+#include "motoman_msgs/UserVarPrimitive.h"
+
 namespace motoman
 {
 namespace motion_ctrl
@@ -46,44 +53,214 @@ using motoman::simple_message::motion_reply::MotionReply;
 typedef motoman::simple_message::motion_ctrl::MotionControlCmd MotionControlCmd;
 using motoman::simple_message::io_ctrl_reply::ReadSingleIOReply;
 using motoman::simple_message::io_ctrl_reply::WriteSingleIOReply;
+using motoman::simple_message::rpc_ctrl::SimpleRpc;
+using motoman::simple_message::rpc_ctrl_reply::SimpleRpcReply;
 
 /**
  * \brief Wrapper class around Motoman-specific motion control commands
  */
 
+
+struct _MP_TASK_SEND_DATA
+{
+  short sTaskNo;
+  char reserved[2];
+} __attribute__((__packed__));
+typedef struct _MP_TASK_SEND_DATA MP_TASK_SEND_DATA;
+
+struct _MP_JOB_NAME_RSP_DATA
+{
+  char cJobName[33];
+  char reserved[2];
+} __attribute__((__packed__));
+typedef struct _MP_JOB_NAME_RSP_DATA MP_JOB_NAME_RSP_DATA;
+
+struct _MP_CUR_JOB_RSP_DATA
+{
+  short usJobLine;
+  short usStep;
+  char cJobName[33];
+  char reserved[3];
+} __attribute__((__packed__));
+typedef struct _MP_CUR_JOB_RSP_DATA MP_CUR_JOB_RSP_DATA;
+
+struct _MP_START_JOB_SEND_DATA
+{
+  short sTaskNo;
+  char cJobName[33];
+  char reserved[5];
+} __attribute__((__packed__));
+typedef struct _MP_START_JOB_SEND_DATA MP_START_JOB_SEND_DATA;
+
+struct _MP_HOLD_SEND_DATA
+{
+  short sHold;
+  char reserved[2];
+} __attribute__((__packed__));
+typedef struct _MP_HOLD_SEND_DATA MP_HOLD_SEND_DATA;
+struct _MP_STD_RSP_DATA
+{
+  short err_no;
+  char reserved[2];
+} __attribute__((__packed__));
+typedef struct _MP_STD_RSP_DATA MP_STD_RSP_DATA;
+
+struct _MP_WAIT_JOB_SEND_DATA
+{
+  short sTaskNo;
+  short sTime;
+} __attribute__((__packed__));
+typedef struct _MP_WAIT_JOB_SEND_DATA MP_WAIT_JOB_SEND_DATA;
+
+struct _MP_CUR_JOB_SEND_DATA
+{
+  short usJobLine;
+  char cJobName[33];
+  char reserved[5];
+} __attribute__((__packed__));
+typedef struct _MP_CUR_JOB_SEND_DATA MP_CUR_JOB_SEND_DATA;
+
+struct _MP_DELETE_JOB_SEND_DATA
+{
+  char cJobName[33];
+  char reserved[7];
+} __attribute__((__packed__));
+typedef struct _MP_DELETE_JOB_SEND_DATA MP_DELETE_JOB_SEND_DATA;
+
+struct _MP_JOB_POS_DATA
+{
+  long ctrl_grp; /* control group CTRLG_T*/
+  long posType;  /* position data type */
+  long varIndex; /* position variable number CTRLG_T*/
+  long attr;     /* data attribute */
+  long attrExt;  /* data attribute(expansion) */
+  long pos[8];   /*position data */
+} __attribute__((__packed__));
+typedef struct _MP_JOB_POS_DATA MP_JOB_POS_DATA;
+
+struct _MP_MOV_CTRL_DATA
+{
+  char intpType;  /* interpolation type */
+  char intpKind;  /* move instruction type*/
+  char speedType; /* speed type */
+  char reserved0; /* speed setting value (VJ=,V=,VR=,VE=,VS=) */
+  long speedValue;
+  long posNum;                /* position data number in move instruction */
+  MP_JOB_POS_DATA posData[3]; /* position data structure */
+  char reserved1[32];
+} __attribute__((__packed__));
+typedef struct _MP_MOV_CTRL_DATA MP_MOV_CTRL_DATA;
+
+struct _MP_JOB_STEP_RSP_DATA
+{
+  short err_no; /* error number */
+  char reserved0[2];
+  long attr;        /* step attribute (future function) */
+  char comment[33]; /* comment */
+  char reserved1[3];
+  long movCtrlDataNum;             /* move instruction number in step */
+  MP_MOV_CTRL_DATA movCtrlData[4]; /* data structure for every move instruction*/
+  long posLevel;                   /* setting value of positioning level (PL=) */
+  long cornerRadius;               /* setting value of conner radius (CR=) */
+  long accValue;                   /* specified value of acceleration (ACC=) */
+  long decValue;                   /* specified value of deceleration (DEC=) */
+  char reserved2[32];
+} __attribute__((__packed__));
+typedef struct _MP_JOB_STEP_RSP_DATA MP_JOB_STEP_RSP_DATA;
+
+struct _MP_MASTER_JOB_SEND_DATA
+{
+  short sTaskNo;
+  char cJobName[33];
+  char reserved[5];
+} __attribute__((__packed__));
+typedef struct _MP_MASTER_JOB_SEND_DATA MP_MASTER_JOB_SEND_DATA;
+
+struct _MP_JOB_STEP_NO_SEND_DATA
+{
+  short usStep;
+  char reserved0[2];
+  char cJobName[33];
+  char reserved1[3];
+} __attribute__((__packed__));
+typedef struct _MP_JOB_STEP_NO_SEND_DATA MP_JOB_STEP_NO_SEND_DATA;
+
+typedef unsigned char MP_B_VAR_BUFF;
+typedef short MP_I_VAR_BUFF;
+typedef long MP_D_VAR_BUFF;
+typedef float MP_R_VAR_BUFF;
+typedef char MP_S_VAR_BUFF[16];
+struct _MP_USR_VAR_INFO
+{
+  int var_type;
+  int var_no;
+  union {
+    MP_B_VAR_BUFF b;
+    MP_I_VAR_BUFF i;
+    MP_D_VAR_BUFF d;
+    MP_R_VAR_BUFF r;
+    MP_S_VAR_BUFF s;
+  } val;
+} __attribute__((__packed__));
+typedef struct _MP_USR_VAR_INFO MP_USR_VAR_INFO;
+
 class MotomanMotionCtrl
 {
+  static boost::mutex mutex_;
+
 public:
   /**
    * \brief Default constructor
    */
   MotomanMotionCtrl() {}
 
-  bool init(SmplMsgConnection* connection, int robot_id);
+  bool init(SmplMsgConnection *connection, int robot_id);
 
 public:
   bool controllerReady();
   bool setTrajMode(bool enable);
   bool setStreamMode(bool enable);
-  bool MotomanMotionCtrlsetMaxAcc(int groupNo, float* max_acc);
-  bool getMaxAcc(int groupNo, float* max_acc);
-  bool setMaxAcc(int groupNo, float* max_acc);
+  bool MotomanMotionCtrlsetMaxAcc(int groupNo, float *max_acc);
+  bool getMaxAcc(int groupNo, float *max_acc);
+  bool setMaxAcc(int groupNo, float *max_acc);
   bool stopTrajectory();
 
   static std::string getErrorString(const MotionReply &reply);
   static std::string getErrorString(const ReadSingleIOReply &reply);
   static std::string getErrorString(const WriteSingleIOReply &reply);
 
-  bool readFromIO(int address, int* value);
+  bool readFromIO(int address, int *value);
   bool writeToIO(int address, int value);
+
+  bool listJobs(std::vector<std::string> &result);
+
+  bool deleteJob(std::string jobName, int &errorNumber);
+  bool startJob(int taskNumber, std::string jobName, int &errorNumber);
+  bool setHold(int hold, int &errorNumber);
+  bool waitForJobEnd(int taskNumber, int time, int &errorNumber);
+  bool getMasterJob(int taskNumber, std::string &jobName);
+  bool setMasterJob(int taskNumber, std::string jobName, int &errorNumber);
+
+  bool getCurJob(int taskNumber, int &jobLine, int &step, std::string &jobName);
+  bool setCurJob(int jobLine, const std::string &jobName, int &errorNumber);
+
+  bool putUserVars(motoman_msgs::PutUserVars::Request &req, motoman_msgs::PutUserVars::Response &res);
+  bool getUserVars(motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res);
+
+  bool resetAlarm(int &errorNumber);
+  bool cancelError(int &errorNumber);
+
 protected:
-  SmplMsgConnection* connection_;
+  SmplMsgConnection *connection_;
   int robot_id_;
+  int call_id_;
 
   bool sendAndReceive(MotionControlCmd command, MotionReply &reply);
+  bool sendAndReceiveRpc(SimpleRpc *data, SimpleRpcReply *reply);
+
 };
 
-}  // namespace motion_ctrl
-}  // namespace motoman
+} // namespace motion_ctrl
+} // namespace motoman
 
-#endif  // MOTOMAN_DRIVER_MOTION_CTRL_H
+#endif // MOTOMAN_DRIVER_MOTION_CTRL_H

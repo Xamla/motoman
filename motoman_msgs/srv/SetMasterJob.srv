@@ -1,0 +1,12 @@
+int16  task_no	# Task number 0: Master task, 1-15: Subtask 1 - 15
+string job_name	# Job name (up to 32 characters for a job name)
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # error code
+# 0x0000 Normal end
+# 0x2060 In error/alarm status
+# 0x2010 Robot is in operation
+# 0x3400 Cannot operate MASTER JOB
+# 0x3410 The JOB name is already registered in another task.
+# 0x4040 Specified JOB not found

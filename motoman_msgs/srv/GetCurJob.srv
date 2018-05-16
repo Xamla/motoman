@@ -1,0 +1,7 @@
+int16 task_no	# Task number 0: Master task, 1-15: Subtask 1 - 15
+---
+bool success
+string message  # informational, e.g. for error messages
+uint16 job_line # Job line
+uint16 step     # Step
+string job_name	# Job name (up to 32 characters for a job name)

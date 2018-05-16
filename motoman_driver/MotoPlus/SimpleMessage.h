@@ -1,7 +1,7 @@
 ﻿// SimpleMessage.h
 //
 /*
-* Software License Agreement (BSD License) 
+* Software License Agreement (BSD License)
 *
 * Copyright (c) 2013, Yaskawa America, Inc.
 * All rights reserved.
@@ -12,7 +12,7 @@
 *       * Redistributions in binary form must reproduce the above copyright
 *       notice, this list of conditions and the following disclaimer in the
 *       documentation and/or other materials provided with the distribution.
-*       * Neither the name of the Yaskawa America, Inc., nor the names 
+*       * Neither the name of the Yaskawa America, Inc., nor the names
 *       of its contributors may be used to endorse or promote products derived
 *       from this software without specific prior written permission.
 *
@@ -68,7 +68,9 @@ typedef enum
 	ROS_MSG_MOTO_WRITE_IO_GROUP = 2009,
 	ROS_MSG_MOTO_WRITE_IO_GROUP_REPLY = 2010,
 	ROS_MSG_MOTO_JOINT_TRAJ_PT_FULL_EX = 2016,
-	ROS_MSG_MOTO_JOINT_FEEDBACK_EX = 2017
+	ROS_MSG_MOTO_JOINT_FEEDBACK_EX = 2017,
+	ROS_MSG_MOTO_SIMPLE_RPC = 2018,
+	ROS_MSG_MOTO_SIMPLE_RPC_REPLY = 2019
 } SmMsgType;
 
 
@@ -81,7 +83,7 @@ typedef enum
 } SmCommType;
 
 
-typedef enum 
+typedef enum
 {
 	ROS_REPLY_INVALID = 0,
 	ROS_REPLY_SUCCESS = 1,
@@ -168,32 +170,32 @@ struct _SmBodyRobotStatus		// ROS_MSG_ROBOT_STATUS = 13
 	int drives_powered;			// Servo Power: -1=Unknown, 1=ON, 0=OFF
 	int e_stopped;				// Controller E-Stop state: -1=Unknown, 1=True(ON), 0=False(OFF)
 	int error_code;				// Alarm code
-	int in_error;				// Is there an alarm:   -1=Unknown, 1=True, 0=False 
-	int in_motion;				// Is currently executing a motion command:  -1=Unknown, 1=True, 0=False 
+	int in_error;				// Is there an alarm:   -1=Unknown, 1=True, 0=False
+	int in_motion;				// Is currently executing a motion command:  -1=Unknown, 1=True, 0=False
 	int mode;  					// Controller/Pendant mode: -1=Unknown, 1=Manual(TEACH), 2=Auto(PLAY)
-	int motion_possible;		// Is the controller ready to receive motion: -1=Unknown, 1=ENABLED, 0=DISABLED 
+	int motion_possible;		// Is the controller ready to receive motion: -1=Unknown, 1=ENABLED, 0=DISABLED
 } __attribute__((__packed__));
 typedef struct _SmBodyRobotStatus SmBodyRobotStatus;
 
 struct _SmBodyJointTrajPtFull	// ROS_MSG_JOINT_TRAJ_PT_FULL = 14
 {
-	int groupNo;  				// Robot/group ID;  0 = 1st robot 
+	int groupNo;  				// Robot/group ID;  0 = 1st robot
 	int sequence;				// Index of point in trajectory; 0 = Initial trajectory point, which should match the robot current position.
 	int validFields;			// Bit-mask indicating which “optional” fields are filled with data. 1=time, 2=position, 4=velocity, 8=acceleration
-	float time;					// Timestamp associated with this trajectory point; Units: in seconds 
-	float pos[ROS_MAX_JOINT];	// Desired joint positions in radian.  Base to Tool joint order  
-	float vel[ROS_MAX_JOINT];	// Desired joint velocities in radian/sec.  
+	float time;					// Timestamp associated with this trajectory point; Units: in seconds
+	float pos[ROS_MAX_JOINT];	// Desired joint positions in radian.  Base to Tool joint order
+	float vel[ROS_MAX_JOINT];	// Desired joint velocities in radian/sec.
 	float acc[ROS_MAX_JOINT];	// Desired joint accelerations in radian/sec^2.
 } __attribute__((__packed__));
 typedef struct _SmBodyJointTrajPtFull SmBodyJointTrajPtFull;
 
 struct _SmBodyJointFeedback		// ROS_MSG_JOINT_FEEDBACK = 15
 {
-	int groupNo;  				// Robot/group ID;  0 = 1st robot 
+	int groupNo;  				// Robot/group ID;  0 = 1st robot
 	int validFields;			// Bit-mask indicating which “optional” fields are filled with data. 1=time, 2=position, 4=velocity, 8=acceleration
-	float time;					// Timestamp associated with this trajectory point; Units: in seconds 
-	float pos[ROS_MAX_JOINT];	// Desired joint positions in radian.  Base to Tool joint order  
-	float vel[ROS_MAX_JOINT];	// Desired joint velocities in radian/sec.  
+	float time;					// Timestamp associated with this trajectory point; Units: in seconds
+	float pos[ROS_MAX_JOINT];	// Desired joint positions in radian.  Base to Tool joint order
+	float vel[ROS_MAX_JOINT];	// Desired joint velocities in radian/sec.
 	float acc[ROS_MAX_JOINT];	// Desired joint accelerations in radian/sec^2.
 } __attribute__((__packed__));
 typedef struct _SmBodyJointFeedback SmBodyJointFeedback;
@@ -201,32 +203,32 @@ typedef struct _SmBodyJointFeedback SmBodyJointFeedback;
 
 struct _SmBodyMotoMotionCtrl	// ROS_MSG_MOTO_MOTION_CTRL = 2011
 {
-	int groupNo;  				// Robot/group ID;  0 = 1st robot 
+	int groupNo;  				// Robot/group ID;  0 = 1st robot
 	int sequence;				// Optional message tracking number that will be echoed back in the response.
 	SmCommandType command;		// Desired command
-	float data[ROS_MAX_JOINT];	// Command data - for future use  
+	float data[ROS_MAX_JOINT];	// Command data - for future use
 } __attribute__((__packed__));
 typedef struct _SmBodyMotoMotionCtrl SmBodyMotoMotionCtrl;
 
 
 struct _SmBodyMotoMotionReply	// ROS_MSG_MOTO_MOTION_REPLY = 2012
 {
-	int groupNo;  				// Robot/group ID;  0 = 1st robot 
+	int groupNo;  				// Robot/group ID;  0 = 1st robot
 	int sequence;				// Optional message tracking number that will be echoed back in the response.
 	int command;				// Reference to the received message command or type
 	SmResultType result;		// High level result code
 	int subcode;				// More detailed result code (optional)
-	float data[ROS_MAX_JOINT];	// Reply data - for future use 
+	float data[ROS_MAX_JOINT];	// Reply data - for future use
 } __attribute__((__packed__));
 typedef struct _SmBodyMotoMotionReply SmBodyMotoMotionReply;
 
 struct _SmBodyJointTrajPtExData
 {
-	int groupNo;  				// Robot/group ID;  0 = 1st robot 
+	int groupNo;  				// Robot/group ID;  0 = 1st robot
 	int validFields;			// Bit-mask indicating which “optional” fields are filled with data. 1=time, 2=position, 4=velocity, 8=acceleration
-	float time;					// Timestamp associated with this trajectory point; Units: in seconds 
-	float pos[ROS_MAX_JOINT];	// Desired joint positions in radian.  Base to Tool joint order  
-	float vel[ROS_MAX_JOINT];	// Desired joint velocities in radian/sec.  
+	float time;					// Timestamp associated with this trajectory point; Units: in seconds
+	float pos[ROS_MAX_JOINT];	// Desired joint positions in radian.  Base to Tool joint order
+	float vel[ROS_MAX_JOINT];	// Desired joint velocities in radian/sec.
 	float acc[ROS_MAX_JOINT];	// Desired joint accelerations in radian/sec^2.
 } __attribute__((__packed__));
 typedef struct _SmBodyJointTrajPtExData SmBodyJointTrajPtExData;

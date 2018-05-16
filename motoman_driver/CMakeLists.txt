@@ -60,6 +60,7 @@ catkin_package(
     std_msgs
     std_srvs
     trajectory_msgs
+    xamla_sysmon_msgs
     urdf
   DEPENDS
   INCLUDE_DIRS
@@ -77,10 +78,14 @@ set(MSG_SRC_FILES
   src/simple_message/messages/motoman_read_single_io_reply_message.cpp
   src/simple_message/messages/motoman_write_single_io_message.cpp
   src/simple_message/messages/motoman_write_single_io_reply_message.cpp
+  src/simple_message/messages/motoman_simple_rpc_message.cpp
+  src/simple_message/messages/motoman_simple_rpc_reply_message.cpp
   src/simple_message/motoman_read_single_io.cpp
   src/simple_message/motoman_read_single_io_reply.cpp
   src/simple_message/motoman_write_single_io.cpp
   src/simple_message/motoman_write_single_io_reply.cpp
+  src/simple_message/motoman_simple_rpc.cpp
+  src/simple_message/motoman_simple_rpc_reply.cpp
 )
 
 set(CLIENT_SRC_FILES
@@ -132,6 +137,7 @@ set_target_properties(motoman_robot_state
 add_executable(motoman_motion_streaming_interface
   src/joint_streaming_node.cpp
   src/joint_trajectory_streamer.cpp
+  src/industrial_robot_client/motoman_ros_services.cpp
   src/motion_ctrl.cpp)
 target_link_libraries(motoman_motion_streaming_interface
   motoman_simple_message
@@ -173,6 +179,7 @@ set_target_properties(motoman_robot_state_bswap
 add_executable(motoman_motion_streaming_interface_bswap
   src/joint_streaming_node.cpp
   src/joint_trajectory_streamer.cpp
+  src/industrial_robot_client/motoman_ros_services.cpp
   src/motion_ctrl.cpp)
 target_link_libraries(motoman_motion_streaming_interface_bswap
   motoman_simple_message_bswap

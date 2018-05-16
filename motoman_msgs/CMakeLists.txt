@@ -10,6 +10,9 @@ add_message_files(
   DynamicJointTrajectory.msg
   DynamicJointState.msg
   DynamicJointTrajectoryFeedback.msg
+  JobPosData.msg
+  MovCtrlData.msg
+  UserVarPrimitive.msg
   )
 
 add_service_files(
@@ -17,6 +20,19 @@ add_service_files(
   CmdJointTrajectoryEx.srv
   WriteIO.srv
   ReadIO.srv
+  ListJobs.srv
+  StartJob.srv
+  WaitForJobEnd.srv
+  SetMasterJob.srv
+  SetCurJob.srv
+  GetCurJob.srv
+  ResetAlarm.srv
+  Hold.srv
+  GetMasterJob.srv
+  DeleteJob.srv
+  CancelError.srv
+  PutUserVars.srv
+  GetUserVars.srv
   )
 
 generate_messages(
@@ -26,3 +42,4 @@ generate_messages(
 catkin_package(
     CATKIN_DEPENDS message_runtime std_msgs trajectory_msgs industrial_msgs genmsg
 )
+
