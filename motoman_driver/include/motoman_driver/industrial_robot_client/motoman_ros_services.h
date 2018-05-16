@@ -50,7 +50,6 @@
 #include "motoman_msgs/GetCurJob.h"
 #include "motoman_msgs/ResetAlarm.h"
 #include "motoman_msgs/GetMasterJob.h"
-#include "motoman_msgs/GetJobStepData.h"
 #include "motoman_msgs/DeleteJob.h"
 #include "motoman_msgs/CancelError.h"
 #include "motoman_msgs/PutUserVars.h"
