@@ -60,6 +60,98 @@ namespace motoman
 namespace ros_services
 {
 using motoman::motion_ctrl::MotomanMotionCtrl;
+
+enum ERROR_CODE
+{
+  normalEnd = 0x0000,
+  robotInOperation = 0x2010,
+  holdPP = 0x2030,
+  holdExternal = 0x2040,
+  holdCommand = 0x2050,
+  errorAlarmStatus = 0x2060,
+  servosOff = 0x2070,
+  wrongOp = 0x2080,
+  inaccessibleData = 0x2110,
+  noOpMasterJob = 0x3400,
+  jobNameExists = 0x3410,
+  editLockJob = 0x4020,
+  spJobNotFound = 0x4040,
+  overDataRange = 0x5200,
+  timeout = 0xFFFF
+};
+
+static std::string printErrorCode(int error_no)
+{
+  std::string result;
+  switch (error_no)
+  {
+  case ERROR_CODE::normalEnd:
+    result = "Normal end";
+    std::cout << std::hex << error_no << " error number: Normal end" << std::endl;
+    break;
+  case ERROR_CODE::noOpMasterJob:
+    result = "Cannot operate MASTER JOB.";
+    std::cout << std::hex << error_no << " error number: Cannot operate MASTER JOB." << std::endl;
+    break;
+  case ERROR_CODE::jobNameExists:
+    result = "The JOB name is already registered in another task.";
+    std::cout << std::hex << error_no << " error number: The JOB name is already registered in another task." << std::endl;
+    break;
+  case ERROR_CODE::editLockJob:
+    result = "Edit lock job";
+    std::cout << std::hex << error_no << " error number: Edit lock job" << std::endl;
+    break;
+  case ERROR_CODE::robotInOperation:
+    result = "Robot is in operation";
+    std::cout << std::hex << error_no << " error number: Robot is in operation" << std::endl;
+    break;
+  case ERROR_CODE::overDataRange:
+    result = "Over data range";
+    std::cout << std::hex << error_no << " error number: Over data range" << std::endl;
+    break;
+  case ERROR_CODE::holdPP:
+    result = "In HOLD status (PP)";
+    std::cout << std::hex << error_no << " error number: In HOLD status (PP)" << std::endl;
+    break;
+  case ERROR_CODE::holdExternal:
+    result = "In HOLD status (External)";
+    std::cout << std::hex << error_no << " error number: In HOLD status (External)" << std::endl;
+    break;
+  case ERROR_CODE::holdCommand:
+    result = "In HOLD status (Command)";
+    std::cout << std::hex << error_no << " error number: In HOLD status (Command)" << std::endl;
+    break;
+  case ERROR_CODE::errorAlarmStatus:
+    std::cout << std::hex << error_no << " error number: In error/alarm status" << std::endl;
+    result = "In error/alarm status";
+    break;
+  case ERROR_CODE::servosOff:
+    std::cout << std::hex << error_no << " error number: In SERVO OFF status" << std::endl;
+    result = "In SERVO OFF status";
+    break;
+  case ERROR_CODE::wrongOp:
+    std::cout << std::hex << error_no << " error number: Wrong operation mode" << std::endl;
+    result = "Wrong operation mode";
+    break;
+  case ERROR_CODE::timeout:
+    std::cout << std::hex << error_no << " error number: Timeout" << std::endl;
+    result = "Timeout";
+    break;
+  case ERROR_CODE::inaccessibleData:
+    std::cout << std::hex << error_no << " error number: Inaccessible Data" << std::endl;
+    result = "Inaccessible Data";
+    break;
+  case ERROR_CODE::spJobNotFound:
+    std::cout << std::hex << error_no << " error number: Specified JOB not found" << std::endl;
+    result = "Specified JOB not found";
+    break;
+  default:
+    std::cout << std::hex << error_no << " error number" << std::endl;
+    result = "unknown error";
+    break;
+  }
+  return result;
+}
 class MotomanRosServices
 {
 

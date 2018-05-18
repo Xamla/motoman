@@ -186,7 +186,7 @@ target_link_libraries(motoman_motion_streaming_interface_bswap
   motoman_industrial_robot_client_bswap
   ${catkin_LIBRARIES})
 set_target_properties(motoman_motion_streaming_interface_bswap
-  PROPERTIES OUTPUT_NAME motion_streaming_interface_bswap
+  PROPERTIES OUTPUT_NAME motion_streaming_interface_bswap COMPILE_DEFINITIONS "BYTE_SWAPPING"
   PREFIX "")
 
 add_executable(${PROJECT_NAME}_joint_trajectory_action

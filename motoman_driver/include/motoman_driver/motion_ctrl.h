@@ -71,7 +71,7 @@ typedef struct _MP_TASK_SEND_DATA MP_TASK_SEND_DATA;
 struct _MP_JOB_NAME_RSP_DATA
 {
   char cJobName[33];
-  char reserved[2];
+  char reserved[3];
 } __attribute__((__packed__));
 typedef struct _MP_JOB_NAME_RSP_DATA MP_JOB_NAME_RSP_DATA;
 

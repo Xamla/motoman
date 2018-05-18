@@ -471,7 +471,7 @@ bool MotomanMotionCtrl::deleteJob(std::string jobName, int &errorNumber)
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpDeleteEnd";
+  const std::string str = "mpDeleteJob";
 
   data.setFunctionName(str);
 
@@ -489,7 +489,7 @@ bool MotomanMotionCtrl::deleteJob(std::string jobName, int &errorNumber)
 
   if (!this->sendAndReceiveRpc(&data, &reply))
   {
-    ROS_ERROR("failed to send mpDeleteEnd command");
+    ROS_ERROR("failed to send mpDeleteJob command");
     return false;
   }
   call_id_++;
@@ -500,7 +500,7 @@ bool MotomanMotionCtrl::deleteJob(std::string jobName, int &errorNumber)
 
   if (status < 0)
   {
-    ROS_ERROR("failed to get mpDeleteEnd. Received status: %d", status);
+    ROS_ERROR("failed to get mpDeleteJob. Received status: %d", status);
     return false;
   }
 
@@ -841,7 +841,7 @@ bool MotomanMotionCtrl::setMasterJob(int taskNumber, std::string jobName, int &e
     return false;
   }
 
-  if (buffer.size() != sizeof(MP_CUR_JOB_RSP_DATA))
+  if (buffer.size() != sizeof(MP_STD_RSP_DATA))
   {
     ROS_ERROR("buffer size does not add up");
     return false;
