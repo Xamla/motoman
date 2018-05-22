@@ -97,6 +97,9 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
 
   services_ = MotomanRosServices::create(&motion_ctrl_, &node_);
 
+  job_action_ = JobActionServer::create("jobaction", motion_ctrl_, node_);
+  job_action_->start();
+
   pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
   this->heartbeat_msg_.header.stamp = ros::Time::now();
   this->heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
@@ -523,10 +526,19 @@ void MotomanJointTrajectoryStreamer::streamingThread()
     {
       boost::mutex::scoped_lock lock(this->mutex_);
 
+      if (job_action_->hasActiveGoal())
+      {
+        this->state_ = TransferStates::JOB_EXECUTION;
+      }
+      else if (this->state_ == TransferStates::JOB_EXECUTION)
+      {
+        this->state_ = TransferStates::IDLE;
+      }
+
       SimpleMessage msg, tmpMsg, reply;
 
       heartbeat_msg_.header.stamp = ros::Time::now();
-      if (!motion_ctrl_.controllerReady())
+      if (this->state_ != TransferStates::JOB_EXECUTION && !motion_ctrl_.controllerReady())
       {
         heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::INTERNAL_ERROR);
         heartbeat_msg_.details = "Robot is not controller ready. If safe, call /robot_enable service to (re-)enable Motoplus motion.";
@@ -549,6 +561,9 @@ void MotomanJointTrajectoryStreamer::streamingThread()
       {
       case TransferStates::IDLE:
         ros::Duration(0.01).sleep(); //  slower loop while waiting for new trajectory
+        break;
+      case TransferStates::JOB_EXECUTION:
+        job_action_->doWork();
         break;
 
       case TransferStates::STREAMING:

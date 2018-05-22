@@ -138,6 +138,7 @@ add_executable(motoman_motion_streaming_interface
   src/joint_streaming_node.cpp
   src/joint_trajectory_streamer.cpp
   src/industrial_robot_client/motoman_ros_services.cpp
+  src/industrial_robot_client/motoman_job_action_server.cpp
   src/motion_ctrl.cpp)
 target_link_libraries(motoman_motion_streaming_interface
   motoman_simple_message
@@ -180,6 +181,7 @@ add_executable(motoman_motion_streaming_interface_bswap
   src/joint_streaming_node.cpp
   src/joint_trajectory_streamer.cpp
   src/industrial_robot_client/motoman_ros_services.cpp
+  src/industrial_robot_client/motoman_job_action_server.cpp
   src/motion_ctrl.cpp)
 target_link_libraries(motoman_motion_streaming_interface_bswap
   motoman_simple_message_bswap

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(motoman_msgs)
 
-find_package(catkin REQUIRED COMPONENTS std_msgs trajectory_msgs industrial_msgs genmsg message_generation)
+find_package(catkin REQUIRED COMPONENTS std_msgs trajectory_msgs actionlib_msgs industrial_msgs genmsg message_generation)
 
 add_message_files(
   FILES
@@ -35,11 +35,16 @@ add_service_files(
   GetUserVars.srv
   )
 
+add_action_files(
+  DIRECTORY action
+  FILES StartJob.action
+)
+
 generate_messages(
-  DEPENDENCIES trajectory_msgs std_msgs industrial_msgs
+  DEPENDENCIES trajectory_msgs std_msgs actionlib_msgs industrial_msgs
 )
 
 catkin_package(
-    CATKIN_DEPENDS message_runtime std_msgs trajectory_msgs industrial_msgs genmsg
+    CATKIN_DEPENDS message_runtime std_msgs trajectory_msgs actionlib_msgs industrial_msgs genmsg
 )
 

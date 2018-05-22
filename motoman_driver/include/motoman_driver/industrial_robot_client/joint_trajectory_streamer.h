@@ -52,7 +52,7 @@ namespace TransferStates
 {
 enum TransferState
 {
-  IDLE = 0, STREAMING = 1, POINT_STREAMING = 2  // ,STARTING, //, STOPPING
+  IDLE = 0, STREAMING = 1, POINT_STREAMING = 2, JOB_EXECUTION = 3  // ,STARTING, //, STOPPING
 };
 }
 typedef TransferStates::TransferState TransferState;

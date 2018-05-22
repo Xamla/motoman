@@ -126,6 +126,26 @@ static inline float Swap32(float value)
   return *(float *)&tmp;
 }
 
+void bswap(int &value)
+{
+  value = Swap32(value);
+}
+
+void bswap(float &value)
+{
+  value = Swap32(value);
+}
+
+void bswap(long &value)
+{
+  value = Swap32(value);
+}
+
+void bswap(short &value)
+{
+  value = Swap16(value);
+}
+
 void bswap(MP_TASK_SEND_DATA &value)
 {
   value.sTaskNo = Swap16(value.sTaskNo);

@@ -43,6 +43,7 @@
 #include "simple_message/simple_message.h"
 
 #include "motoman_driver/industrial_robot_client/motoman_ros_services.h"
+#include "motoman_driver/industrial_robot_client/motoman_job_action_server.h"
 
 namespace motoman
 {
@@ -51,6 +52,7 @@ namespace joint_trajectory_streamer
 
 using motoman::motion_ctrl::MotomanMotionCtrl;
 using motoman::ros_services::MotomanRosServices;
+using motoman::ros_actions::JobActionServer;
 using industrial_robot_client::joint_trajectory_streamer::JointTrajectoryStreamer;
 using industrial::simple_message::SimpleMessage;
 using industrial::smpl_msg_connection::SmplMsgConnection;
@@ -162,6 +164,7 @@ protected:
   ros::ServiceServer enabler_;
 
   MotomanRosServices::Ptr services_;
+  JobActionServer::Ptr job_action_;
 
   /**
    * \brief Publisher used to signal monitor if the driver is ready

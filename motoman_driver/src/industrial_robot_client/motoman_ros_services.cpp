@@ -98,14 +98,14 @@ bool MotomanRosServices::listJobsCB(motoman_msgs::ListJobs::Request &req,
 bool MotomanRosServices::getUserVarsCB(motoman_msgs::GetUserVars::Request &req,
                                        motoman_msgs::GetUserVars::Response &res)
 {
-  bool ret = motion_ctrl_->getUserVars(req,res);
+  bool ret = motion_ctrl_->getUserVars(req, res);
   return true;
 }
 
 bool MotomanRosServices::putUserVarsCB(motoman_msgs::PutUserVars::Request &req,
                                        motoman_msgs::PutUserVars::Response &res)
 {
-  bool ret = motion_ctrl_->putUserVars(req,res);
+  bool ret = motion_ctrl_->putUserVars(req, res);
   return true;
 }
 
@@ -194,7 +194,6 @@ bool MotomanRosServices::setMasterJobCB(motoman_msgs::SetMasterJob::Request &req
   res.message = printErrorCode(errorNumber);
   return true;
 }
-
 
 bool MotomanRosServices::waitForJobEndCB(motoman_msgs::WaitForJobEnd::Request &req,
                                          motoman_msgs::WaitForJobEnd::Response &res)

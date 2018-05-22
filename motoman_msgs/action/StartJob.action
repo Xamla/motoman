@@ -1,0 +1,12 @@
+int16  task_no  # Task number: Always specify the master task, 0.
+string job_name	# Job name (up to 32 characters for a job name)
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # error code
+---
+string message  # informational, e.g. for error messages
+uint16 job_line # Job line
+uint16 step     # Step
+string job_name	# Job name (up to 32 characters for a job name)
+
