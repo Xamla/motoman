@@ -445,7 +445,15 @@ bool MotomanMotionCtrl::startJob(int taskNumber, std::string jobName, int &error
 
   MP_START_JOB_SEND_DATA sStartData;
   sStartData.sTaskNo = taskNumber;
-  strcpy(sStartData.cJobName, jobName.c_str());
+  if (jobName.size() > 0)
+  {
+    strcpy(sStartData.cJobName, jobName.c_str());
+  }
+  else
+  {
+      ROS_INFO("[MotomanMotionCtrl::startJob]RESUME JOBS");
+  }
+
   const int field_length = sizeof(MP_START_JOB_SEND_DATA);
   std::vector<char> tmp_vector;
   tmp_vector.resize(field_length, 0);
@@ -799,7 +807,7 @@ bool MotomanMotionCtrl::setCurJob(int jobLine, const std::string &jobName, int &
     return false;
   }
 
-  if (buffer.size() != sizeof(MP_CUR_JOB_RSP_DATA))
+  if (buffer.size() != sizeof(MP_STD_RSP_DATA))
   {
     ROS_ERROR("buffer size does not add up");
     return false;
