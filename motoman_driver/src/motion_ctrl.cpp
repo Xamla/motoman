@@ -284,6 +284,11 @@ void bswap(END_SKILL_SEND_DATA &value)
   value.robotNo = Swap16(value.robotNo);
 }
 
+void bswap(SET_ALARM_SEND_DATA &value)
+{
+  value.alm_code = Swap16(value.alm_code);
+}
+
 bool MotomanMotionCtrl::init(SmplMsgConnection *connection, int robot_id)
 {
   connection_ = connection;
@@ -990,6 +995,58 @@ bool MotomanMotionCtrl::resetAlarm(int &errorNumber)
   return true;
 }
 
+bool MotomanMotionCtrl::setAlarm(const std::string &alarm_message, const short alarm_code, const uint8_t sub_code, int &errorNumber)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("mpSetAlarm");
+
+  data.setFunctionName(str);
+  if (alarm_message.size() > 32)
+  {
+    ROS_ERROR("alarm_message is too long: %d", alarm_message.size());
+    return false;
+  }
+
+  if (alarm_code < 8000 || alarm_code > 8999)
+  {
+    ROS_ERROR("Invalid alarm code: %d [8000,8999]", alarm_code);
+    return false;
+  }
+
+  SET_ALARM_SEND_DATA sData;
+  sData.alm_code = alarm_code;
+  sData.sub_code = sub_code;
+  strcpy(sData.alm_msg, alarm_message.c_str());
+
+  std::vector<char> tmp_vector(sizeof(SET_ALARM_SEND_DATA), 0);
+
+  bswap(sData);
+  memcpy(tmp_vector.data(), &sData, sizeof(SET_ALARM_SEND_DATA));
+
+  data.setArgumentsSize(tmp_vector.size());
+  data.setArgumentsData(tmp_vector);
+
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send mpSetAlarm command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+  errorNumber = status;
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get mpSetAlarm. Received status: %d", status);
+    return false;
+  }
+  return true;
+}
+
 bool MotomanMotionCtrl::removeFile(const std::string fileName, int &errorNumber)
 {
   SimpleRpc data;
@@ -1206,18 +1263,6 @@ bool MotomanMotionCtrl::requestListJobs(int &jobCount, int &fileSize, std::strin
   fileName = result.fileName;
 
   return true;
-}
-
-bool MotomanMotionCtrl::updateSkillQue()
-{
-  boost::mutex::scoped_lock lock(this->skill_que_mutex_);
-  SimpleRpc data;
-  SimpleRpcReply reply;
-  data.init(call_id_, 0); //callid, argumentssize
-  const std::string str("skillSnd");
-
-  data.setFunctionName(str);
-  //return from que the next skillsnd
 }
 
 bool MotomanMotionCtrl::endSkill(int robotNo)

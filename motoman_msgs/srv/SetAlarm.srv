@@ -1,0 +1,7 @@
+int16 alm_code
+uint8 sub_code
+string alm_msg
+---
+bool success
+string status_message # informational, e.g. for error messages
+int32 err_no   # error code

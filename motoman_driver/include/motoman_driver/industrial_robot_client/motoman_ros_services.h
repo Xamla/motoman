@@ -56,6 +56,7 @@
 #include "motoman_msgs/GetUserVars.h"
 #include "motoman_msgs/SkillEnd.h"
 #include "motoman_msgs/SkillRead.h"
+#include "motoman_msgs/SetAlarm.h"
 
 namespace motoman
 {
@@ -255,6 +256,14 @@ protected:
    * \brief Service used to  in controller.
    */
   ros::ServiceServer srv_skillEnd_;
+
+    /**
+   * \brief Service used to  in controller.
+   */
+  ros::ServiceServer srv_setAlarm_;
+
+  bool setAlarmCB(motoman_msgs::SetAlarm::Request &req,
+                  motoman_msgs::SetAlarm::Response &res);
 
   bool skillEndCB(motoman_msgs::SkillEnd::Request &req,
                   motoman_msgs::SkillEnd::Response &res);

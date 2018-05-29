@@ -254,6 +254,14 @@ struct _END_SKILL_SEND_DATA
 } __attribute__((__packed__));
 typedef struct _END_SKILL_SEND_DATA END_SKILL_SEND_DATA;
 
+struct _SET_ALARM_SEND_DATA
+{
+    int16_t alm_code;
+    uint8_t sub_code;
+    char alm_msg[33];
+} __attribute__((__packed__));
+typedef struct _SET_ALARM_SEND_DATA SET_ALARM_SEND_DATA;
+
 class MotomanMotionCtrl
 {
   static boost::mutex mutex_;
@@ -280,8 +288,6 @@ public:
   static std::string getErrorString(const ReadSingleIOReply &reply);
   static std::string getErrorString(const WriteSingleIOReply &reply);
 
-  bool updateSkillQue();
-
   bool readFromIO(int address, int *value);
   bool writeToIO(int address, int value);
 
@@ -305,6 +311,8 @@ public:
 
   bool endSkill(int robotNo);
   bool readSkill(std::vector<int> &skillPending, std::vector<std::string> &cmds);
+
+  bool setAlarm(const std::string &alarm_message, const short alarm_code, const uint8_t sub_code, int &errorNumber);
 
 protected:
   SmplMsgConnection *connection_;

@@ -35,6 +35,7 @@ add_service_files(
   GetUserVars.srv
   SkillEnd.srv
   SkillRead.srv
+  SetAlarm.srv
   )
 
 add_action_files(

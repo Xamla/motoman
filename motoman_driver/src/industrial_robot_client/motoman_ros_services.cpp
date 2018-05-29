@@ -60,6 +60,7 @@ MotomanRosServices::MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeH
 
   srv_cancelError_ = node_->advertiseService("cancel_error", &MotomanRosServices::cancelErrorCB, this);
   srv_resetAlarm_ = node_->advertiseService("reset_alarm", &MotomanRosServices::resetAlarmCB, this);
+  srv_setAlarm_ = node_->advertiseService("set_alarm", &MotomanRosServices::setAlarmCB, this);
   srv_put_user_vars_ = node_->advertiseService("put_user_vars", &MotomanRosServices::putUserVarsCB, this);
   srv_get_user_vars_ = node_->advertiseService("get_user_vars", &MotomanRosServices::getUserVarsCB, this);
 
@@ -106,12 +107,12 @@ bool MotomanRosServices::skillReadCB(motoman_msgs::SkillRead::Request &req,
   res.success = motion_ctrl_->readSkill(skillPending, cmds);
   if (res.success)
   {
-    for(size_t i = 0; i < cmds.size(); i++)
+    for (size_t i = 0; i < cmds.size(); i++)
     {
       res.cmd.push_back(cmds[i]);
     }
 
-    for(size_t i = 0; i < skillPending.size(); i++)
+    for (size_t i = 0; i < skillPending.size(); i++)
     {
       res.skill_pending.push_back(skillPending[i]);
     }
@@ -172,6 +173,17 @@ bool MotomanRosServices::getMasterJobCB(motoman_msgs::GetMasterJob::Request &req
     res.message = "failed to get master job: " + jobName;
   }
   res.job_name = jobName;
+  return true;
+}
+
+bool MotomanRosServices::setAlarmCB(motoman_msgs::SetAlarm::Request &req,
+                motoman_msgs::SetAlarm::Response &res)
+{
+  int errorNumber;
+  bool ret = motion_ctrl_->setAlarm(req.alm_msg, req.alm_code, req.sub_code, errorNumber);
+  res.status_message = printErrorCode(errorNumber);
+  res.err_no = errorNumber;
+  res.success = ret;
   return true;
 }
 
