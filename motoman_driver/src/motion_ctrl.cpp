@@ -85,6 +85,7 @@ namespace motion_ctrl
 {
 
 boost::mutex MotomanMotionCtrl::mutex_;
+boost::mutex MotomanMotionCtrl::skill_que_mutex_;
 
 static inline uint16_t Swap16(uint16_t value)
 {
@@ -251,6 +252,36 @@ void bswap(MP_USR_VAR_INFO &value)
     value.val.r = Swap32(value.val.r);
     break;
   }
+}
+
+void bswap(LIST_JOBS_RSP_DATA &value)
+{
+  value.err_no = Swap16(value.err_no);
+  value.jobCount = Swap16(value.jobCount);
+  value.fileSize = Swap32(value.fileSize);
+}
+
+void bswap(READ_FILE_CHUNK_SEND_DATA &value)
+{
+  value.offset = Swap32(value.offset);
+  value.length = Swap32(value.length);
+}
+
+void bswap(READ_FILE_CHUNK_RSP_DATA &value)
+{
+  value.err_no = Swap16(value.err_no);
+  value.bytesRead = Swap32(value.bytesRead);
+}
+
+void bswap(READ_SKILL_RSP_DATA &value)
+{
+  value.skillPending[0] = Swap32(value.skillPending[0]);
+  value.skillPending[1] = Swap32(value.skillPending[1]);
+}
+
+void bswap(END_SKILL_SEND_DATA &value)
+{
+  value.robotNo = Swap16(value.robotNo);
 }
 
 bool MotomanMotionCtrl::init(SmplMsgConnection *connection, int robot_id)
@@ -427,7 +458,7 @@ bool MotomanMotionCtrl::startJob(int taskNumber, std::string jobName, int &error
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpStartJob";
+  const std::string str("mpStartJob");
 
   data.setFunctionName(str);
 
@@ -451,7 +482,7 @@ bool MotomanMotionCtrl::startJob(int taskNumber, std::string jobName, int &error
   }
   else
   {
-      ROS_INFO("[MotomanMotionCtrl::startJob]RESUME JOBS");
+    ROS_INFO("[MotomanMotionCtrl::startJob]RESUME JOBS");
   }
 
   const int field_length = sizeof(MP_START_JOB_SEND_DATA);
@@ -499,7 +530,7 @@ bool MotomanMotionCtrl::deleteJob(std::string jobName, int &errorNumber)
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpDeleteJob";
+  const std::string str("mpDeleteJob");
 
   data.setFunctionName(str);
 
@@ -551,7 +582,7 @@ bool MotomanMotionCtrl::waitForJobEnd(int taskNumber, int time, int &errorNumber
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpWaitForJobEnd";
+  const std::string str("mpWaitForJobEnd");
 
   data.setFunctionName(str);
 
@@ -604,7 +635,7 @@ bool MotomanMotionCtrl::setHold(int hold, int &errorNumber)
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpHold";
+  const std::string str("mpHold");
 
   data.setFunctionName(str);
 
@@ -656,7 +687,7 @@ bool MotomanMotionCtrl::getMasterJob(int taskNumber, std::string &jobName)
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpGetMasterJob";
+  const std::string str("mpGetMasterJob");
 
   data.setFunctionName(str);
 
@@ -706,13 +737,12 @@ bool MotomanMotionCtrl::getMasterJob(int taskNumber, std::string &jobName)
   return true;
 }
 
-
 bool MotomanMotionCtrl::getCurJob(int taskNumber, int &jobLine, int &step, std::string &jobName)
 {
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpGetCurJob";
+  const std::string str("mpGetCurJob");
 
   data.setFunctionName(str);
 
@@ -769,7 +799,7 @@ bool MotomanMotionCtrl::setCurJob(int jobLine, const std::string &jobName, int &
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpSetCurJob";
+  const std::string str("mpSetCurJob");
 
   data.setFunctionName(str);
 
@@ -820,12 +850,12 @@ bool MotomanMotionCtrl::setCurJob(int jobLine, const std::string &jobName, int &
   return true;
 }
 
-bool MotomanMotionCtrl::setMasterJob(int taskNumber, std::string jobName, int &errorNumber)
+bool MotomanMotionCtrl::setMasterJob(int taskNumber, const std::string &jobName, int &errorNumber)
 {
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpSetMasterJob";
+  const std::string str("mpSetMasterJob");
 
   data.setFunctionName(str);
 
@@ -887,7 +917,7 @@ bool MotomanMotionCtrl::cancelError(int &errorNumber)
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpCancelError";
+  const std::string str("mpCancelError");
 
   data.setFunctionName(str);
 
@@ -908,10 +938,9 @@ bool MotomanMotionCtrl::cancelError(int &errorNumber)
     return false;
   }
 
-  const int funtion_name_size = 33;
-  if (buffer.size() % funtion_name_size != 0)
+  if (buffer.size() != sizeof(MP_STD_RSP_DATA))
   {
-    ROS_ERROR("failed to get mpCancelError. Response size is invalid: %d", (int)buffer.size());
+    ROS_ERROR("buffer size does not add up");
     return false;
   }
 
@@ -927,7 +956,7 @@ bool MotomanMotionCtrl::resetAlarm(int &errorNumber)
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "mpResetAlarm";
+  const std::string str("mpResetAlarm");
 
   data.setFunctionName(str);
 
@@ -948,10 +977,9 @@ bool MotomanMotionCtrl::resetAlarm(int &errorNumber)
     return false;
   }
 
-  const int funtion_name_size = 33;
-  if (buffer.size() % funtion_name_size != 0)
+  if (buffer.size() != sizeof(MP_STD_RSP_DATA))
   {
-    ROS_ERROR("failed to get mpResetAlarm. Response size is invalid: %d", (int)buffer.size());
+    ROS_ERROR("buffer size does not add up");
     return false;
   }
 
@@ -962,12 +990,187 @@ bool MotomanMotionCtrl::resetAlarm(int &errorNumber)
   return true;
 }
 
-bool MotomanMotionCtrl::listJobs(std::vector<std::string> &result)
+bool MotomanMotionCtrl::removeFile(const std::string fileName, int &errorNumber)
 {
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
-  const std::string str = "listJobs";
+  const std::string str("mpRemove");
+
+  data.setFunctionName(str);
+
+  std::vector<char> tmp_vector(fileName.begin(), fileName.end());
+
+  data.setArgumentsSize(tmp_vector.size());
+  data.setArgumentsData(tmp_vector);
+
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send mpRemove command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+  errorNumber = status;
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get mpRemove. Received status: %d", status);
+    return false;
+  }
+  return true;
+}
+
+bool MotomanMotionCtrl::readFileChunk(int offset, int length, const std::string &fileName, char *resultBuffer, int &errorNumber)
+{
+  ROS_DEBUG("offset: %d, length %d, fileName %s", offset, length, fileName.c_str());
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("readFileChunk");
+
+  data.setFunctionName(str);
+
+  if (fileName.size() > 128)
+  {
+    ROS_ERROR("fileName is too long: %d", fileName.size());
+    return false;
+  }
+
+  READ_FILE_CHUNK_SEND_DATA sData;
+  sData.offset = offset;
+  sData.length = length;
+  strcpy(sData.fileName, fileName.c_str());
+  std::vector<char> tmp_vector(sizeof(READ_FILE_CHUNK_SEND_DATA), 0);
+
+  bswap(sData);
+  memcpy(tmp_vector.data(), &sData, sizeof(READ_FILE_CHUNK_SEND_DATA));
+
+  data.setArgumentsSize(tmp_vector.size());
+  data.setArgumentsData(tmp_vector);
+
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send readFileChunk command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get readFileChunk. Received status: %d", status);
+    return false;
+  }
+
+  if (buffer.size() != sizeof(READ_FILE_CHUNK_RSP_DATA))
+  {
+    ROS_ERROR("buffer size does not add up");
+    return false;
+  }
+
+  READ_FILE_CHUNK_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+  errorNumber = result.err_no;
+  if (result.bytesRead != length)
+  {
+    ROS_ERROR("Read bytes do not match length");
+    return false;
+  }
+  memcpy(resultBuffer + offset, result.buffer, result.bytesRead);
+  return true;
+}
+
+bool MotomanMotionCtrl::listJobs(std::vector<std::string> &result)
+{
+  int jobCount = -1;
+  int fileSize = -1;
+  int errorNumber = -1;
+  std::string fileName;
+  if (!requestListJobs(jobCount, fileSize, fileName, errorNumber))
+  {
+    ROS_ERROR("[listJobs] failed to send requestListJobs command");
+    return false;
+  }
+
+  ROS_INFO("jobCount: %d, fileSize %d, fileName %s", jobCount, fileSize, fileName.c_str());
+  size_t chunk_size = 900;
+  size_t total_chunks = fileSize / chunk_size;
+  size_t last_chunk_size = fileSize % chunk_size;
+  std::vector<char> fileData(fileSize);
+  if (last_chunk_size != 0)
+  {
+    ++total_chunks;
+  }
+  else
+  {
+    last_chunk_size = chunk_size;
+  }
+
+  for (size_t chunk = 0; chunk < total_chunks; ++chunk)
+  {
+    size_t this_chunk_size =
+        chunk == total_chunks - 1 /* if last chunk */
+            ? last_chunk_size     /* then fill chunk with remaining bytes */
+            : chunk_size;         /* else fill entire chunk */
+
+    int offset = chunk * chunk_size;
+    if (!readFileChunk(offset, this_chunk_size, fileName, fileData.data(), errorNumber))
+    {
+      ROS_ERROR("[listJobs] failed to send readFileChunk command");
+      return false;
+    }
+  }
+
+  if (errorNumber != 0)
+  {
+
+    switch (errorNumber)
+    {
+    case 1:
+      ROS_ERROR("[listJobs] mpOpen Failed");
+      break;
+    case 2:
+      ROS_ERROR("[listJobs] mpLSeek failed");
+      break;
+    case 3:
+      ROS_ERROR("[listJobs] mpRead Failed");
+      break;
+    default:
+      ROS_ERROR("[listJobs] unknown error");
+      break;
+    }
+    return false;
+  }
+
+  const int funtion_name_size = 33;
+  const int count = fileData.size() / funtion_name_size;
+  const char *result_data = fileData.data();
+
+  for (size_t i = 0; i < count; i++)
+  {
+    result.push_back(result_data);
+    result_data += funtion_name_size;
+  }
+  if (!removeFile(fileName, errorNumber))
+  {
+    ROS_WARN("Could not delete file: %s [%d]", fileName.c_str(), errorNumber);
+  }
+  return true;
+}
+
+bool MotomanMotionCtrl::requestListJobs(int &jobCount, int &fileSize, std::string &fileName, int &errorNumber)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("listJobs");
 
   data.setFunctionName(str);
 
@@ -988,29 +1191,127 @@ bool MotomanMotionCtrl::listJobs(std::vector<std::string> &result)
     return false;
   }
 
-  const int funtion_name_size = 33;
-  if (buffer.size() % funtion_name_size != 0)
+  if (buffer.size() != sizeof(LIST_JOBS_RSP_DATA))
   {
-    ROS_ERROR("failed to get listJobs. Response size is invalid: %d", (int)buffer.size());
+    ROS_ERROR("buffer size does not add up");
     return false;
   }
 
-  const int count = buffer.size() / funtion_name_size;
-  for (size_t i = 0; i < count; i++)
-  {
-    result.push_back(result_data);
-    result_data += funtion_name_size;
-  }
+  LIST_JOBS_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+  errorNumber = result.err_no;
+  fileSize = result.fileSize;
+  jobCount = result.jobCount;
+  fileName = result.fileName;
 
   return true;
 }
 
-bool MotomanMotionCtrl::getUserVars(motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res)
+bool MotomanMotionCtrl::updateSkillQue()
+{
+  boost::mutex::scoped_lock lock(this->skill_que_mutex_);
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, argumentssize
+  const std::string str("skillSnd");
+
+  data.setFunctionName(str);
+  //return from que the next skillsnd
+}
+
+bool MotomanMotionCtrl::endSkill(int robotNo)
+{
+  if (robotNo>1)
+  {
+    ROS_ERROR("Robot no can only be 0, 1 but has value %d", robotNo);
+  }
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, argumentssize
+  const std::string str("endSkill");
+  END_SKILL_SEND_DATA sData;
+  sData.robotNo = robotNo;
+  std::vector<char> tmp_vector(sizeof(END_SKILL_SEND_DATA), 0);
+
+  bswap(sData);
+  memcpy(tmp_vector.data(), &sData, sizeof(END_SKILL_SEND_DATA));
+
+  data.setArgumentsSize(tmp_vector.size());
+  data.setArgumentsData(tmp_vector);
+
+  data.setFunctionName(str);
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send endSkill command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get endSkill. Received status: %d", status);
+    return false;
+  }
+  return true;
+}
+
+bool MotomanMotionCtrl::readSkill(std::vector<int> &skillPending, std::vector<std::string> &cmds)
 {
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, argumentssize
-  const std::string str = "mpGetUserVars";
+  const std::string str("readSkill");
+
+  data.setFunctionName(str);
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send readSkill command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get readSkill. Received status: %d", status);
+    return false;
+  }
+
+  if (buffer.size() != sizeof(READ_SKILL_RSP_DATA))
+  {
+    ROS_ERROR("buffer size does not add up");
+    return false;
+  }
+
+  READ_SKILL_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+  skillPending.clear();
+  cmds.clear();
+  skillPending.push_back(result.skillPending[0]);
+  skillPending.push_back(result.skillPending[1]);
+
+  cmds.push_back(result.cmd[0]);
+  cmds.push_back(result.cmd[1]);
+
+  return true;
+}
+
+
+bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, argumentssize
+  const std::string str("mpGetUserVars");
 
   data.setFunctionName(str);
 
@@ -1088,12 +1389,12 @@ bool MotomanMotionCtrl::getUserVars(motoman_msgs::GetUserVars::Request &req, mot
   return true;
 }
 
-bool MotomanMotionCtrl::putUserVars(motoman_msgs::PutUserVars::Request &req, motoman_msgs::PutUserVars::Response &res)
+bool MotomanMotionCtrl::putUserVars(const motoman_msgs::PutUserVars::Request &req, motoman_msgs::PutUserVars::Response &res)
 {
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, argumentssize
-  const std::string str = "mpPutUserVars";
+  const std::string str("mpPutUserVars");
 
   data.setFunctionName(str);
 

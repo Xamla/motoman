@@ -1,0 +1,6 @@
+
+---
+bool success
+string status_message
+string[] cmd
+bool[] skill_pending

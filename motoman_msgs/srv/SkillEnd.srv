@@ -1,0 +1,4 @@
+uint32 robot_no
+---
+bool success
+string status_message

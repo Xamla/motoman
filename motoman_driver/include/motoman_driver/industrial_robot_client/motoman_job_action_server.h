@@ -17,6 +17,14 @@ using ERROR_CODE = motoman::ros_services::ERROR_CODE;
 typedef actionlib::ActionServer<motoman_msgs::StartJobAction> ActionServer;
 typedef ActionServer::GoalHandle GoalHandle;
 
+enum JOB_EXECUTION_STATE
+{
+  IDLE = -1,
+  MOVING = 0,
+  ONHOLD = 1,
+  RESTARTING = 2
+};
+
 class JobState
 {
 public:
@@ -25,6 +33,8 @@ public:
   int step;
   int task_no;
   bool active;
+  ros::Time last_onhold = ros::Time::now();
+  bool is_onhold = false;
   std::string job_name;
 };
 
@@ -51,6 +61,7 @@ private:
   bool action_server_started;
   GoalHandle current_goal_handle;
   bool has_goal;
+  JOB_EXECUTION_STATE job_exe_state;
 
   void goalCallback(GoalHandle goal_handle);
   void cancelCallback(GoalHandle goal_handle);
@@ -60,9 +71,11 @@ private:
   bool findTaskNoOfStartedJob(const std::string job_name, int &task_no);
   bool publishFeedback();
   bool startJob(std::string target_job_name);
+  bool resumeJob();
   bool resetMotoRos();
   const int NUMBEROFTASKSLOTS = 15;
   JobState cur_job_state;
+
 };
 } // namespace ros_actions
 } // namespace motoman

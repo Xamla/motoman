@@ -62,6 +62,9 @@ MotomanRosServices::MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeH
   srv_resetAlarm_ = node_->advertiseService("reset_alarm", &MotomanRosServices::resetAlarmCB, this);
   srv_put_user_vars_ = node_->advertiseService("put_user_vars", &MotomanRosServices::putUserVarsCB, this);
   srv_get_user_vars_ = node_->advertiseService("get_user_vars", &MotomanRosServices::getUserVarsCB, this);
+
+  srv_skillRead_ = node_->advertiseService("skill_read", &MotomanRosServices::skillReadCB, this);
+  srv_skillEnd_ = node_->advertiseService("skill_end", &MotomanRosServices::skillEndCB, this);
 }
 
 MotomanRosServices::~MotomanRosServices()
@@ -93,6 +96,35 @@ bool MotomanRosServices::listJobsCB(motoman_msgs::ListJobs::Request &req,
   }
 
   return true;
+}
+
+bool MotomanRosServices::skillReadCB(motoman_msgs::SkillRead::Request &req,
+                                     motoman_msgs::SkillRead::Response &res)
+{
+  std::vector<int> skillPending;
+  std::vector<std::string> cmds;
+  res.success = motion_ctrl_->readSkill(skillPending, cmds);
+  if (res.success)
+  {
+    for(size_t i = 0; i < cmds.size(); i++)
+    {
+      res.cmd.push_back(cmds[i]);
+    }
+
+    for(size_t i = 0; i < skillPending.size(); i++)
+    {
+      res.skill_pending.push_back(skillPending[i]);
+    }
+  }
+  return res.success;
+}
+
+bool MotomanRosServices::skillEndCB(motoman_msgs::SkillEnd::Request &req,
+                                    motoman_msgs::SkillEnd::Response &res)
+{
+  res.success = motion_ctrl_->endSkill(req.robot_no);
+
+  return res.success;
 }
 
 bool MotomanRosServices::getUserVarsCB(motoman_msgs::GetUserVars::Request &req,

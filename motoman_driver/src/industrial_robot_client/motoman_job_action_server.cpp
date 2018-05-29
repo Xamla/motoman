@@ -7,7 +7,7 @@ namespace ros_actions
 using motoman::motion_ctrl::MotomanMotionCtrl;
 using ERROR_CODE = motoman::ros_services::ERROR_CODE;
 JobActionServer::JobActionServer(ros::NodeHandle &node_handle, std::string base_name, MotomanMotionCtrl &motoman_com)
-    : base_name(base_name), motion_ctrl_(motoman_com), node_(node_handle), has_goal(false)
+    : base_name(base_name), motion_ctrl_(motoman_com), node_(node_handle), has_goal(false), job_exe_state(JOB_EXECUTION_STATE::IDLE)
 {
   this->action_server_started = false;
   this->action_server = nullptr;
@@ -29,6 +29,8 @@ void JobActionServer::abort(std::string message_text, ERROR_CODE code)
   this->current_goal_handle.setAborted(result, message_text);
   this->cur_job_state.active = false;
   this->has_goal = false;
+  this->job_exe_state = JOB_EXECUTION_STATE::IDLE;
+  this->resetMotoRos();
 }
 
 bool JobActionServer::findTaskNoOfStartedJob(const std::string job_name, int &task_no)
@@ -65,7 +67,7 @@ void JobActionServer::doWork()
   {
     auto goal = this->current_goal_handle.getGoal();
     int task_no = 0;
-    int error_mumber;
+    int error_number;
     std::string reason_for_abort;
     if (!this->cur_job_state.active)
     {
@@ -83,7 +85,6 @@ void JobActionServer::doWork()
       return;
     }
     publishFeedback();
-    int error_number;
     int exp_time = 0;
     bool success = motion_ctrl_.waitForJobEnd(this->cur_job_state.task_no, exp_time, error_number);
     if (success)
@@ -92,6 +93,31 @@ void JobActionServer::doWork()
       switch (error_number)
       {
       case ERROR_CODE::normalEnd:
+
+        if (this->job_exe_state == JOB_EXECUTION_STATE::RESTARTING)
+        {
+          ROS_INFO("Restart");
+          if (!this->resumeJob())
+          {
+            ROS_ERROR("ResumeJob not successful");
+          }
+          break;
+        }
+        else if (this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD)
+        {
+          ROS_DEBUG("ON HOLD");
+          break;
+        }
+        else if (this->job_exe_state == JOB_EXECUTION_STATE::IDLE)
+        {
+          ROS_DEBUG("JOB_EXECUTION_STATE::IDLE");
+          break;
+        }
+        else if (this->job_exe_state == JOB_EXECUTION_STATE::MOVING)
+        {
+          ROS_DEBUG("JOB_EXECUTION_STATE::MOVING");
+        }
+
         result.success = true;
         result.status_message = "Job finished successfully";
         result.err_no = error_number;
@@ -101,13 +127,57 @@ void JobActionServer::doWork()
         this->cur_job_state.active = false;
         break;
       case ERROR_CODE::holdPP:
-      case ERROR_CODE::holdExternal:
-      case ERROR_CODE::holdCommand:
-      case ERROR_CODE::errorAlarmStatus:
-      case ERROR_CODE::servosOff:
-        reason_for_abort = motoman::ros_services::printErrorCode(error_mumber);
-        this->abort(reason_for_abort, (ERROR_CODE)error_mumber);
+      {
+        ros::Time _time = ros::Time::now();
+        if (this->cur_job_state.is_onhold == false)
+        {
+          this->cur_job_state.last_onhold = ros::Time::now();
+          this->cur_job_state.is_onhold = true;
+        }
+        else if ((_time - this->cur_job_state.last_onhold).toSec() < ros::Duration(1.5).toSec())
+        {
+          ROS_DEBUG("ignoring hold %f", (_time - this->cur_job_state.last_onhold).toSec());
+          return;
+        }
+        this->cur_job_state.last_onhold = _time;
+
+        if (this->job_exe_state != JOB_EXECUTION_STATE::ONHOLD && this->job_exe_state != JOB_EXECUTION_STATE::RESTARTING)
+        {
+          ROS_DEBUG("waitForJobEnd: Hold active");
+
+          if (!motion_ctrl_.setHold(1, error_number))
+          {
+            reason_for_abort = "could not call setHold command. Check connection to robot.";
+            this->abort(reason_for_abort, ERROR_CODE::wrongOp);
+            break;
+          }
+          this->job_exe_state = JOB_EXECUTION_STATE::ONHOLD;
+        }
+        else if (this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD)
+        {
+          ROS_DEBUG("Trigger Restarting");
+          this->job_exe_state = JOB_EXECUTION_STATE::RESTARTING;
+        }
         break;
+      }
+      case ERROR_CODE::holdExternal:
+        ROS_INFO("waitForJobEnd: Hold external active");
+        break;
+      case ERROR_CODE::holdCommand:
+        ROS_INFO("waitForJobEnd: Hold command active");
+        break;
+      case ERROR_CODE::errorAlarmStatus:
+        ROS_INFO("waitForJobEnd: Hold command active");
+      case ERROR_CODE::servosOff:
+        reason_for_abort = motoman::ros_services::printErrorCode(error_number);
+        this->abort(reason_for_abort, (ERROR_CODE)error_number);
+        break;
+      case ERROR_CODE::timeout:
+        this->job_exe_state = JOB_EXECUTION_STATE::MOVING;
+        break;
+      default:
+        reason_for_abort = motoman::ros_services::printErrorCode(error_number);
+        ROS_INFO(reason_for_abort.c_str());
       }
     }
     else
@@ -168,12 +238,14 @@ void JobActionServer::goalCallback(GoalHandle goal_handle)
   this->current_goal_handle = goal_handle;
   this->cur_job_state.active = false;
   this->cur_job_state.job_name = goal->job_name;
+  this->cur_job_state.last_onhold = ros::Time::now();
   this->has_goal = true;
 }
 
 bool JobActionServer::publishFeedback()
 {
   motoman_msgs::StartJobFeedback feedback;
+  feedback.job_name = this->cur_job_state.job_name;
   feedback.job_line = this->cur_job_state.line_number;
   feedback.step = this->cur_job_state.step;
   feedback.status_message = "Task no: " + std::to_string(this->cur_job_state.task_no);
@@ -197,10 +269,11 @@ bool JobActionServer::resetMotoRos()
 
 bool JobActionServer::startJob(std::string target_job_name)
 {
+  ROS_INFO("START JOB");
   std::string active_job_name;
   std::string reason_for_abort;
   int task_no = 0;
-  int error_mumber;
+  int error_number;
   int job_line;
   int step;
   if (!motion_ctrl_.getCurJob(0, job_line, step, active_job_name)) // 0 specifies master job
@@ -210,21 +283,21 @@ bool JobActionServer::startJob(std::string target_job_name)
     return false;
   }
 
-  if (!motion_ctrl_.setHold(1, error_mumber))
+  if (!motion_ctrl_.setHold(1, error_number))
   {
     reason_for_abort = "could not call setHold command. Check connection to robot.";
     this->abort(reason_for_abort, ERROR_CODE::wrongOp);
     return false;
   }
 
-  if (!motion_ctrl_.setHold(0, error_mumber))
+  if (!motion_ctrl_.setHold(0, error_number))
   {
     reason_for_abort = "could not call setHold command. Check connection to robot.";
     this->abort(reason_for_abort, ERROR_CODE::wrongOp);
     return false;
   }
 
-  if (!motion_ctrl_.startJob(task_no, target_job_name, error_mumber))
+  if (!motion_ctrl_.startJob(task_no, target_job_name, error_number))
   {
     reason_for_abort = "could not call startJob command. Check connection to robot.";
     this->abort(reason_for_abort, ERROR_CODE::wrongOp);
@@ -232,13 +305,43 @@ bool JobActionServer::startJob(std::string target_job_name)
   }
   else
   {
-    if (error_mumber != ERROR_CODE::normalEnd)
+    if (error_number != ERROR_CODE::normalEnd)
     {
-      reason_for_abort = motoman::ros_services::printErrorCode(error_mumber);
-      this->abort(reason_for_abort, (ERROR_CODE)error_mumber);
+      reason_for_abort = motoman::ros_services::printErrorCode(error_number);
+      this->abort(reason_for_abort, (ERROR_CODE)error_number);
       return false;
     }
   }
+  this->job_exe_state = JOB_EXECUTION_STATE::MOVING;
+  return true;
+}
+
+bool JobActionServer::resumeJob()
+{
+  if (this->job_exe_state == JOB_EXECUTION_STATE::RESTARTING)
+  {
+    ROS_INFO("RESUME JOB");
+    std::string reason_for_abort;
+    int error_number;
+    if (!motion_ctrl_.setHold(0, error_number))
+    {
+      reason_for_abort = "could not call setHold command. Check connection to robot.";
+      this->abort(reason_for_abort, ERROR_CODE::wrongOp);
+      return false;
+    }
+    else
+    {
+      if (error_number != ERROR_CODE::normalEnd)
+      {
+        reason_for_abort = motoman::ros_services::printErrorCode(error_number);
+        this->abort(reason_for_abort, (ERROR_CODE)error_number);
+        return false;
+      }
+    }
+  }
+  ROS_DEBUG("Trigger MOVING");
+  this->job_exe_state = JOB_EXECUTION_STATE::IDLE;
+  this->cur_job_state.is_onhold = false;
   return true;
 }
 

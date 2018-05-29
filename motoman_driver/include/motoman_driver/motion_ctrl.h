@@ -43,6 +43,8 @@
 #include "motoman_msgs/PutUserVars.h"
 #include "motoman_msgs/GetUserVars.h"
 #include "motoman_msgs/UserVarPrimitive.h"
+#include "motoman_msgs/SkillEnd.h"
+#include "motoman_msgs/SkillRead.h"
 
 namespace motoman
 {
@@ -60,6 +62,13 @@ using motoman::simple_message::rpc_ctrl_reply::SimpleRpcReply;
  * \brief Wrapper class around Motoman-specific motion control commands
  */
 
+enum FILEOPERATION_ERROR_CODE
+{
+  SUCCESS = 0,                       //Normal end
+  NO_SPECIFIED_FILE = -1,            // Error (No specified file or descriptor)
+  UNABLE_TO_USE_FC_API = -2,         // Unable to use File Control API and Existing File Access API
+  SPECIFIED_DRIVER_NAME_INVALID = -3 //Specified drive name is invalid.
+};
 
 struct _MP_TASK_SEND_DATA
 {
@@ -204,9 +213,51 @@ struct _MP_USR_VAR_INFO
 } __attribute__((__packed__));
 typedef struct _MP_USR_VAR_INFO MP_USR_VAR_INFO;
 
+struct _LIST_JOBS_RSP_DATA
+{
+  uint16_t err_no;
+  uint16_t jobCount;
+  int32_t fileSize;
+  char fileName[128];
+} __attribute__((__packed__));
+typedef struct _LIST_JOBS_RSP_DATA LIST_JOBS_RSP_DATA;
+
+struct _READ_FILE_CHUNK_SEND_DATA
+{
+  int32_t offset;
+  uint32_t length;
+  char fileName[128];
+} __attribute__((__packed__));
+typedef struct _READ_FILE_CHUNK_SEND_DATA READ_FILE_CHUNK_SEND_DATA;
+
+struct _READ_FILE_CHUNK_RSP_DATA
+{
+  uint16_t err_no;
+  char reserved[2];
+  int32_t bytesRead;
+  uint8_t buffer[900];
+} __attribute__((__packed__));
+
+typedef struct _READ_FILE_CHUNK_RSP_DATA READ_FILE_CHUNK_RSP_DATA;
+
+struct _READ_SKILL_RSP_DATA
+{
+  uint32_t skillPending[2]; // boolean value for each robotNo (1 = TRUE, 0 = FALSE)
+  char cmd[2][256];   // skill command text
+} __attribute__((__packed__));
+typedef struct _READ_SKILL_RSP_DATA READ_SKILL_RSP_DATA;
+
+struct _END_SKILL_SEND_DATA
+{
+    uint16_t robotNo;
+    char reserved[2];
+} __attribute__((__packed__));
+typedef struct _END_SKILL_SEND_DATA END_SKILL_SEND_DATA;
+
 class MotomanMotionCtrl
 {
   static boost::mutex mutex_;
+  static boost::mutex skill_que_mutex_;
 
 public:
   /**
@@ -229,26 +280,31 @@ public:
   static std::string getErrorString(const ReadSingleIOReply &reply);
   static std::string getErrorString(const WriteSingleIOReply &reply);
 
+  bool updateSkillQue();
+
   bool readFromIO(int address, int *value);
   bool writeToIO(int address, int value);
 
   bool listJobs(std::vector<std::string> &result);
 
-  bool deleteJob(std::string jobName, int &errorNumber);
+  bool deleteJob(const std::string jobName, int &errorNumber);
   bool startJob(int taskNumber, std::string jobName, int &errorNumber);
   bool setHold(int hold, int &errorNumber);
   bool waitForJobEnd(int taskNumber, int time, int &errorNumber);
   bool getMasterJob(int taskNumber, std::string &jobName);
-  bool setMasterJob(int taskNumber, std::string jobName, int &errorNumber);
+  bool setMasterJob(int taskNumber, const std::string &jobName, int &errorNumber);
 
   bool getCurJob(int taskNumber, int &jobLine, int &step, std::string &jobName);
   bool setCurJob(int jobLine, const std::string &jobName, int &errorNumber);
 
-  bool putUserVars(motoman_msgs::PutUserVars::Request &req, motoman_msgs::PutUserVars::Response &res);
-  bool getUserVars(motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res);
+  bool putUserVars(const motoman_msgs::PutUserVars::Request &req, motoman_msgs::PutUserVars::Response &res);
+  bool getUserVars(const motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res);
 
   bool resetAlarm(int &errorNumber);
   bool cancelError(int &errorNumber);
+
+  bool endSkill(int robotNo);
+  bool readSkill(std::vector<int> &skillPending, std::vector<std::string> &cmds);
 
 protected:
   SmplMsgConnection *connection_;
@@ -257,7 +313,9 @@ protected:
 
   bool sendAndReceive(MotionControlCmd command, MotionReply &reply);
   bool sendAndReceiveRpc(SimpleRpc *data, SimpleRpcReply *reply);
-
+  bool readFileChunk(int offset, int length, const std::string &fileName, char *resultBuffer, int &errorNumber);
+  bool requestListJobs(int &jobCount, int &fileSize, std::string &fileName, int &errorNumber);
+  bool removeFile(const std::string fileName, int &errorNumber);
 };
 
 } // namespace motion_ctrl

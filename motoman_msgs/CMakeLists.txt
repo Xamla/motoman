@@ -33,6 +33,8 @@ add_service_files(
   CancelError.srv
   PutUserVars.srv
   GetUserVars.srv
+  SkillEnd.srv
+  SkillRead.srv
   )
 
 add_action_files(

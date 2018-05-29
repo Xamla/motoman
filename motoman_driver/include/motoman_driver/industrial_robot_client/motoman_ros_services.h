@@ -54,6 +54,8 @@
 #include "motoman_msgs/CancelError.h"
 #include "motoman_msgs/PutUserVars.h"
 #include "motoman_msgs/GetUserVars.h"
+#include "motoman_msgs/SkillEnd.h"
+#include "motoman_msgs/SkillRead.h"
 
 namespace motoman
 {
@@ -77,7 +79,7 @@ enum ERROR_CODE
   editLockJob = 0x4020,
   spJobNotFound = 0x4040,
   overDataRange = 0x5200,
-  timeout = 0xFFFF
+  timeout = 0xffffffff
 };
 
 static std::string printErrorCode(int error_no)
@@ -155,139 +157,155 @@ static std::string printErrorCode(int error_no)
 class MotomanRosServices
 {
 
-  public:
-    typedef boost::shared_ptr<MotomanRosServices> Ptr;
-    static Ptr create(MotomanMotionCtrl *connection, ros::NodeHandle *pn);
+public:
+  typedef boost::shared_ptr<MotomanRosServices> Ptr;
+  static Ptr create(MotomanMotionCtrl *connection, ros::NodeHandle *pn);
 
-    /**
+  /**
      * \brief Destructor
      */
-    ~MotomanRosServices();
+  ~MotomanRosServices();
 
-  protected:
-    /**
+protected:
+  /**
         * \brief Constructor
         *
         */
-    MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeHandle *pn);
-    MotomanMotionCtrl *motion_ctrl_;
-    ros::NodeHandle *node_;
-    ros::ServiceServer srv_list_jobs_; // handle for job info service
+  MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeHandle *pn);
+  MotomanMotionCtrl *motion_ctrl_;
+  ros::NodeHandle *node_;
+  ros::ServiceServer srv_list_jobs_; // handle for job info service
 
-    /**
+  /**
    * \brief Service used to read io adresses in controller.
    */
-    ros::ServiceServer srv_io_reader_;
+  ros::ServiceServer srv_io_reader_;
 
-    /**
+  /**
    * \brief Service used to write value to io adresse in controller.
    */
-    ros::ServiceServer srv_io_writer_;
+  ros::ServiceServer srv_io_writer_;
 
-    /**
+  /**
    * \brief Service used to hold job in controller.
    */
-    ros::ServiceServer srv_hold_;
+  ros::ServiceServer srv_hold_;
 
-    /**
+  /**
    * \brief Service used to start job in controller.
    */
-    ros::ServiceServer srv_startJob_;
+  ros::ServiceServer srv_startJob_;
 
-    /**
+  /**
    * \brief Service used to wait for job end in controller.
    */
-    ros::ServiceServer srv_waitForJobEnd_;
+  ros::ServiceServer srv_waitForJobEnd_;
 
-    /**
+  /**
    * \brief Service used to set master job in controller.
    */
-    ros::ServiceServer srv_setMasterJob_;
+  ros::ServiceServer srv_setMasterJob_;
 
-    /**
+  /**
    * \brief Service used to set current job in controller.
    */
-    ros::ServiceServer srv_setCurJob_;
+  ros::ServiceServer srv_setCurJob_;
 
-    /**
+  /**
    * \brief Service used to set current job in controller.
    */
-    ros::ServiceServer srv_getCurJob_;
+  ros::ServiceServer srv_getCurJob_;
 
-    /**
+  /**
    * \brief Service used to reset alarm in controller.
    */
-    ros::ServiceServer srv_resetAlarm_;
+  ros::ServiceServer srv_resetAlarm_;
 
-    /**
+  /**
    * \brief Service used to get Master job details in controller.
    */
-    ros::ServiceServer srv_getMasterJob_;
+  ros::ServiceServer srv_getMasterJob_;
 
-    /**
+  /**
    * \brief Service used to reset alarm in controller.
    */
-    ros::ServiceServer srv_DeleteJob_;
+  ros::ServiceServer srv_DeleteJob_;
 
-    /**
+  /**
    * \brief Service used to reset alarm in controller.
    */
-    ros::ServiceServer srv_cancelError_;
+  ros::ServiceServer srv_cancelError_;
 
-    /**
+  /**
    * \brief Service used to reset alarm in controller.
    */
-    ros::ServiceServer srv_put_user_vars_;
+  ros::ServiceServer srv_put_user_vars_;
 
-    /**
+  /**
    * \brief Service used to reset alarm in controller.
    */
-    ros::ServiceServer srv_get_user_vars_;
+  ros::ServiceServer srv_get_user_vars_;
 
-    bool getUserVarsCB(motoman_msgs::GetUserVars::Request &req,
-                       motoman_msgs::GetUserVars::Response &res);
+  /**
+   * \brief Service used to  in controller.
+   */
+  ros::ServiceServer srv_skillRead_;
 
-    bool putUserVarsCB(motoman_msgs::PutUserVars::Request &req,
-                       motoman_msgs::PutUserVars::Response &res);
+  /**
+   * \brief Service used to  in controller.
+   */
+  ros::ServiceServer srv_skillEnd_;
 
-    bool cancelErrorCB(motoman_msgs::CancelError::Request &req,
-                       motoman_msgs::CancelError::Response &res);
+  bool skillEndCB(motoman_msgs::SkillEnd::Request &req,
+                  motoman_msgs::SkillEnd::Response &res);
 
-    bool deleteJobCB(motoman_msgs::DeleteJob::Request &req,
-                     motoman_msgs::DeleteJob::Response &res);
+  bool skillReadCB(motoman_msgs::SkillRead::Request &req,
+                   motoman_msgs::SkillRead::Response &res);
 
-    bool getMasterJobCB(motoman_msgs::GetMasterJob::Request &req,
-                        motoman_msgs::GetMasterJob::Response &res);
+  bool getUserVarsCB(motoman_msgs::GetUserVars::Request &req,
+                     motoman_msgs::GetUserVars::Response &res);
 
-    bool resetAlarmCB(motoman_msgs::ResetAlarm::Request &req,
-                      motoman_msgs::ResetAlarm::Response &res);
+  bool putUserVarsCB(motoman_msgs::PutUserVars::Request &req,
+                     motoman_msgs::PutUserVars::Response &res);
 
-    bool setCurJobCB(motoman_msgs::SetCurJob::Request &req,
-                     motoman_msgs::SetCurJob::Response &res);
+  bool cancelErrorCB(motoman_msgs::CancelError::Request &req,
+                     motoman_msgs::CancelError::Response &res);
 
-    bool getCurJobCB(motoman_msgs::GetCurJob::Request &req,
-                     motoman_msgs::GetCurJob::Response &res);
+  bool deleteJobCB(motoman_msgs::DeleteJob::Request &req,
+                   motoman_msgs::DeleteJob::Response &res);
 
-    bool setMasterJobCB(motoman_msgs::SetMasterJob::Request &req,
-                        motoman_msgs::SetMasterJob::Response &res);
+  bool getMasterJobCB(motoman_msgs::GetMasterJob::Request &req,
+                      motoman_msgs::GetMasterJob::Response &res);
 
-    bool waitForJobEndCB(motoman_msgs::WaitForJobEnd::Request &req,
-                         motoman_msgs::WaitForJobEnd::Response &res);
+  bool resetAlarmCB(motoman_msgs::ResetAlarm::Request &req,
+                    motoman_msgs::ResetAlarm::Response &res);
 
-    bool startJobCB(motoman_msgs::StartJob::Request &req,
-                    motoman_msgs::StartJob::Response &res);
+  bool setCurJobCB(motoman_msgs::SetCurJob::Request &req,
+                   motoman_msgs::SetCurJob::Response &res);
 
-    bool holdCB(motoman_msgs::Hold::Request &req,
-                motoman_msgs::Hold::Response &res);
+  bool getCurJobCB(motoman_msgs::GetCurJob::Request &req,
+                   motoman_msgs::GetCurJob::Response &res);
 
-    bool ioReadCB(motoman_msgs::ReadIO::Request &req,
-                  motoman_msgs::ReadIO::Response &res);
+  bool setMasterJobCB(motoman_msgs::SetMasterJob::Request &req,
+                      motoman_msgs::SetMasterJob::Response &res);
 
-    bool ioWriteCB(motoman_msgs::WriteIO::Request &req,
-                   motoman_msgs::WriteIO::Response &res);
+  bool waitForJobEndCB(motoman_msgs::WaitForJobEnd::Request &req,
+                       motoman_msgs::WaitForJobEnd::Response &res);
 
-    bool listJobsCB(motoman_msgs::ListJobs::Request &req,
-                    motoman_msgs::ListJobs::Response &res);
+  bool startJobCB(motoman_msgs::StartJob::Request &req,
+                  motoman_msgs::StartJob::Response &res);
+
+  bool holdCB(motoman_msgs::Hold::Request &req,
+              motoman_msgs::Hold::Response &res);
+
+  bool ioReadCB(motoman_msgs::ReadIO::Request &req,
+                motoman_msgs::ReadIO::Response &res);
+
+  bool ioWriteCB(motoman_msgs::WriteIO::Request &req,
+                 motoman_msgs::WriteIO::Response &res);
+
+  bool listJobsCB(motoman_msgs::ListJobs::Request &req,
+                  motoman_msgs::ListJobs::Response &res);
 };
 } // namespace ros_services
 } // namespace motoman
