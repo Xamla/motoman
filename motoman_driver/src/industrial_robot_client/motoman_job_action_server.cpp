@@ -24,7 +24,7 @@ void JobActionServer::abort(std::string message_text, ERROR_CODE code)
   ROS_INFO(message_text.c_str());
   motoman_msgs::StartJobResult result;
   result.success = false;
-  result.message = "Job aborted: " + message_text;
+  result.status_message = "Job aborted: " + message_text;
   result.err_no = code;
   this->current_goal_handle.setAborted(result, message_text);
   this->cur_job_state.active = false;
@@ -93,7 +93,7 @@ void JobActionServer::doWork()
       {
       case ERROR_CODE::normalEnd:
         result.success = true;
-        result.message = "Job finished successfully";
+        result.status_message = "Job finished successfully";
         result.err_no = error_number;
         this->resetMotoRos();
         this->current_goal_handle.setSucceeded(result, "Goal reached");
@@ -146,7 +146,7 @@ void JobActionServer::goalCallback(GoalHandle goal_handle)
     reason_for_rejection = "Job_name is too long.";
     motoman_msgs::StartJobResult result;
     result.success = false;
-    result.message = reason_for_rejection;
+    result.status_message = reason_for_rejection;
     result.err_no = ERROR_CODE::spJobNotFound;
     goal_handle.setRejected(result, reason_for_rejection);
     return;
@@ -157,7 +157,7 @@ void JobActionServer::goalCallback(GoalHandle goal_handle)
     reason_for_rejection = "Job is already active.";
     motoman_msgs::StartJobResult result;
     result.success = false;
-    result.message = reason_for_rejection;
+    result.status_message = reason_for_rejection;
     result.err_no = ERROR_CODE::wrongOp;
     goal_handle.setRejected(result, reason_for_rejection);
     return;
@@ -176,7 +176,7 @@ bool JobActionServer::publishFeedback()
   motoman_msgs::StartJobFeedback feedback;
   feedback.job_line = this->cur_job_state.line_number;
   feedback.step = this->cur_job_state.step;
-  feedback.message = "Task no: " + std::to_string(this->cur_job_state.task_no);
+  feedback.status_message = "Task no: " + std::to_string(this->cur_job_state.task_no);
   this->current_goal_handle.publishFeedback(feedback);
 }
 
