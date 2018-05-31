@@ -229,6 +229,12 @@ install(DIRECTORY include/${PROJECT_NAME}/
     DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )
 
+# lua files
+install(DIRECTORY lua
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+   FILES_MATCHING PATTERN "*.lua"
+)
+
 # other files
 foreach(dir Inform launch MotoPlus)
    install(DIRECTORY ${dir}/

@@ -1,0 +1,3 @@
+<launch>
+    <node name="service_simulator" pkg="motoman_driver" type="service_simulator.lua" cwd="node" output="screen" />
+</launch>
