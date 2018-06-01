@@ -6,6 +6,102 @@ local nh
 local services = {}
 
 
+local MP_VAR = {
+    B=0,
+    I=1,
+    D=2,
+    R=3,
+    S=4,
+    P=5,
+    BP=6,
+    EX=7,
+}
+
+
+local robot_state = {
+    job_list = { 'dummy_job_1', 'dummy_job_2', 'rosvita_rocks' },
+    robot_enabled = false,
+    io_state = {},
+    user_variables = {},
+    cur_job = {},
+    master_job = {}
+}
+
+
+local io_ranges = {
+    { 10, 2567, 'Universal input' },
+    { 10010, 12567, 'Universal output' },
+    { 20010, 22567, 'External input' },
+    { 30010, 32567, 'External output' },
+    { 40010, 41607, 'Specific input' },
+    { 50010, 52007, 'Specific output' },
+    { 60010, 60647, 'Interface panel' },
+    { 70010, 79997, 'Auxiliary relay' },
+    { 80010, 80647, 'Control input' },
+    { 82010, 82207, 'Pseudo input' },
+    { 25010, 27567, 'Network input' },
+    { 35010, 37567, 'Network output' },
+    { 1000000, 1000559, 'Register' },
+}
+
+
+local valid_write_io_ranges = {
+    { 10010, 12567, 'Universal output' },
+    { 60010, 60647, 'Interface panel' },
+    { 25010, 27567, 'Network input' },
+    { 1000000, 1000559, 'Register' }
+}
+
+
+local function fillIoTable(first, last)
+    local x = 0
+    local t = robot_state.io_state
+    for i=first,last do
+        t[i] = x
+        x = x + 1
+        if x > 255 then
+            x = 0
+        end
+    end
+end
+
+
+local function initializeRobotState()
+    -- fill user variables with dummy values
+    local numeric_types = { MP_VAR.B, MP_VAR.I, MP_VAR.D, MP_VAR.R }
+    for _,type_code in ipairs(numeric_types) do
+        local t = {}
+        for i=1,100 do
+            t[i] = i
+        end
+        robot_state.user_variables[type_code] = t
+    end
+    local t = {}
+    for i=1,100 do
+        t[i] = string.format('string%03d', i)
+    end
+    robot_state.user_variables[MP_VAR.S] = t
+
+    -- generate dummy io state
+    for _,io_range in ipairs(io_ranges) do
+        local lo,hi,name = unpack(io_range)
+        fillIoTable(lo, hi)
+    end
+
+    for i=1,16 do
+        robot_state.cur_job[i] = {
+            job_line = 1,
+             step = 2,
+            job_name = string.format('dummy_job%d', i)
+        }
+    end
+
+    for i=1,16 do
+        robot_state.master_job[i] = string.format('master_job%d', i)
+    end
+end
+
+
 local function printXamlaBanner()
   print([[
     _  __                __
@@ -24,12 +120,14 @@ end
 
 --- std_srvs/Trigger
 local function handleRobotEnable(request, response, header)
+    robot_state.robot_enabled = true
     return true
 end
 
 
 --- std_srvs/Trigger
 local function handleRobotDisable(request, response, header)
+    robot_state.robot_enabled = false
     return true
 end
 
@@ -65,7 +163,7 @@ end
 local function handleListJobs(request, response, header)
     response.success = true
     response.message = 'ok'
-    response.available_jobs = { 'dummy_job_1', 'dummy_job_2', 'rosvita_rocks' }
+    response.available_jobs = robot_state.job_list
     return true
 end
 
@@ -79,24 +177,45 @@ end
     string job_name # Job name (up to 32 characters for a job name)
 ]]
 local function handleGetMasterJob(request, response, header)
+    if request.task_no < 0 or request.task_no > 15 then
+        response.success = false
+        response.message = 'task_no out of range (0-15)'
+        return true
+    end
 
+    response.job_name = robot_state.master_job[request.task_no + 1]
     response.success = true
     response.message = 'ok'
-    response.job_name = string.format('dummy_master_job_%d', request.task_no)
     return true
 end
 
 
-local MP_VAR = {
-    B=0,
-    I=1,
-    D=2,
-    R=3,
-    S=4,
-    P=5,
-    BP=6,
-    EX=7,
-}
+--- motoman_msgs/GetCurJob
+--[[
+    int16 task_no	# Task number 0: Master task, 1-15: Subtask 1 - 15
+    ---
+    bool success
+    string message  # informational, e.g. for error messages
+    uint16 job_line # Job line
+    uint16 step     # Step
+    string job_name # Job name (up to 32 characters for a job name)
+]]
+local function handleGetCurJob(request, response, header)
+    if request.task_no < 0 or request.task_no > 15 then
+        response.success = false
+        response.message = 'task_no out of range (0-15)'
+        return true
+    end
+
+    local job = robot_state.cur_job[request.task_no + 1]
+    response.job_line = job.job_line
+    response.step = job.step
+    response.job_name = job.job_name
+
+    response.success = true
+    response.message = 'ok'
+    return true
+end
 
 
 --- motoman_msgs/GetUserVars
@@ -136,6 +255,7 @@ end
 
 local function handleGetUserVars(request, response, header)
     local variables = response.variables
+    local user_variables = robot_state.user_variables
     for i,v in ipairs(request.variables) do
         local v = createUserVarPrimitive(v.values)
 
@@ -146,16 +266,12 @@ local function handleGetUserVars(request, response, header)
         end
 
         local t = v.var_type
-        if t == MP_VAR.B then  -- byte
-            v.int_value = 12
-        elseif t == MP_VAR.I then -- int
-            v.int_value = 1234
-        elseif t == MP_VAR.D then -- double int
-            v.int_value = 123456
+        if t == MP_VAR.B or t == MP_VAR.I or t == MP_VAR.D then
+            v.int_value = user_variables[t][v.var_no+1]
         elseif t == MP_VAR.R then -- real
-            v.float_value = 123.456
+            v.float_value = user_variables[t][v.var_no+1]
         elseif t == MP_VAR.S then -- string
-            v.string_value = 'test'
+            v.string_value = user_variables[t][v.var_no+1]
         else
             response.success = false
             response.message = string.format('Variable type %d not supported', t)
@@ -173,31 +289,59 @@ end
 
 --- motoman_msgs/ReadIO
 --[[
-    uint64 adress
+    uint64 address
     ---
     bool success
     string message # informational, e.g. for error messages
     uint64 value
 ]]
 local function handleIORead(request, response, header)
-    response.success = true
-    response.message = 'ok'
-    response.value = 1
+    local address = request.address
+    local v = robot_state.io_state[address]
+    if v == nil then
+        response.success = false
+        response.message = string.format('Invalid address %d specified', address)
+        response.value = 0
+    else
+        response.success = true
+        response.message = 'ok'
+        response.value = v
+    end
     return true
+end
+
+
+local function isValidWriteAddress(address)
+    for _,valid_range in ipairs(valid_write_io_ranges) do
+        local lo, hi = unpack(valid_range)
+        if lo >= address and address <= hi then
+            return true
+        end
+    end
+    return false
 end
 
 
 --- motoman_msgs/WriteIO
 --[[
-    uint64 adress
+    uint64 address
     uint64 value
     ---
     bool success
     string message # informational, e.g. for error messages
 ]]
 local function handleIOWrite(request, response, header)
-    response.success = true
-    response.message = 'ok'
+    local address = request.address
+
+    if isValidWriteAddress(address) then
+        robot_state.io_state[address] = request.value
+        response.success = true
+        response.message = 'ok'
+    else
+        response.success = false
+        response.message = string.format('Invalid IO address %d for writing specified', address)
+    end
+
     return true
 end
 
@@ -213,19 +357,22 @@ end
 local function handlePutUserVars(request, response, header)
     response.success = true
     response.message = 'ok'
+    local user_variables = robot_state.user_variables
     for i,v in ipairs(request.variables) do
 
+        if v.var_no < 0 or v.var_no > 100 then
+            response.success = false
+            response.message = string.format('var_no %d out of range', v.var_no)
+            return true
+        end
+
         local t = v.var_type
-        if t == MP_VAR.B then  -- byte
-            -- v.int_value
-        elseif t == MP_VAR.I then -- int
-            -- v.int_value
-        elseif t == MP_VAR.D then -- double int
-            -- v.int_value
+        if t == MP_VAR.B or t == MP_VAR.I or t == MP_VAR.D then
+            user_variables[t][v.var_no+1] = v.int_value
         elseif t == MP_VAR.R then -- real
-            -- v.float_value
+            user_variables[t][v.var_no+1] = v.float_value
         elseif t == MP_VAR.S then -- string
-            v.string_value = 'test'
+            user_variables[t][v.var_no+1] = v.string_value
         else
             response.success = false
             response.err_no = -1
@@ -258,12 +405,12 @@ end
     string alm_msg
     ---
     bool success
-    string status_message # informational, e.g. for error messages
+    string message # informational, e.g. for error messages
     int32 err_no # error code
 ]]
 local function handleSetAlarm(request, response, header)
     response.success = true
-    response.status_message = 'ok'
+    response.message = 'ok'
     return true
 end
 
@@ -284,6 +431,11 @@ end
     # 0x5200 Over data range
 ]]
 local function handleSetCurJob(request, response, header)
+
+    local master_job = robot_state.cur_job[1]
+    master_job.job_line = request.job_line
+    master_job.job_name = request.job_name
+
     response.success = true
     response.message = 'ok'
     return true
@@ -306,6 +458,18 @@ end
     # 0x4040 Specified JOB not found
 ]]
 local function handleSetMasterJob(request, response, header)
+    if request.task_no < 0 or request.task_no > 15 then
+        response.success = false
+        response.message = 'task_no out of range (0-15)'
+        return true
+    end
+    if #request.job_name > 32 then
+        response.success = false
+        response.message = 'job_name too long'
+        return true
+    end
+
+    robot_state.master_job[request.task_no + 1] = request.job_name
     response.success = true
     response.message = 'ok'
     return true
@@ -317,11 +481,11 @@ end
     uint32 robot_no
     ---
     bool success
-    string status_message
+    string message
 ]]
 local function handleSkillEnd(request, response, header)
     response.success = true
-    response.status_message = 'ok'
+    response.message = 'ok'
     return true
 end
 
@@ -330,13 +494,13 @@ end
 --[[
     ---
     bool success
-    string status_message
+    string message
     string[] cmd
     bool[] skill_pending
 ]]
 local function handleSkillRead(request, response, header)
     response.success = true
-    response.status_message = 'ok'
+    response.message = 'ok'
     response.cmd = { '', '' }
     response.skill_pending = { false, false }
     return true
@@ -394,6 +558,7 @@ local function advertiseSerices()
     services.stop_motion      = { type = 'industrial_msgs/StopMotion', handler = handleStopMotion }
     services.cancel_error     = { type = 'motoman_msgs/CancelError', handler = simpleHandler }
     services.delete_job       = { type = 'motoman_msgs/DeleteJob', handler = simpleHandler }
+    services.get_cur_job      = { type = 'motoman_msgs/GetCurJob', handler = handleGetCurJob }
     services.get_master_job   = { type = 'motoman_msgs/GetMasterJob', handler = handleGetMasterJob }
     services.get_user_vars    = { type = 'motoman_msgs/GetUserVars', handler = handleGetUserVars }
     services.hold_job         = { type = 'motoman_msgs/Hold', handler = simpleHandler }
@@ -433,6 +598,8 @@ local function main()
 
     printXamlaBanner()
     print('SDA service simulator v0.1\n')
+
+    initializeRobotState()
 
     advertiseSerices()
 

@@ -1,5 +1,9 @@
-uint64 adress
-uint64 value
+uint32 address
+# 10010 - 12567 Universal output #10010 - #12567(2048)
+# 60010 - 60647 Interface panel #60010 - #60647(512)
+# 25010 - 27567 Network input #25010 - #27567(2048)
+# 1000000 - 1000559 Register #1000000 - #1000559(560)
+uint32 value
 ---
 bool success
 string message # informational, e.g. for error messages

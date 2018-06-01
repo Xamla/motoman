@@ -181,7 +181,7 @@ bool MotomanRosServices::setAlarmCB(motoman_msgs::SetAlarm::Request &req,
 {
   int errorNumber;
   bool ret = motion_ctrl_->setAlarm(req.alm_msg, req.alm_code, req.sub_code, errorNumber);
-  res.status_message = printErrorCode(errorNumber);
+  res.message = printErrorCode(errorNumber);
   res.err_no = errorNumber;
   res.success = ret;
   return true;
@@ -285,7 +285,7 @@ bool MotomanRosServices::ioReadCB(motoman_msgs::ReadIO::Request &req,
                                   motoman_msgs::ReadIO::Response &res)
 {
   int result = 0;
-  bool ret = motion_ctrl_->readFromIO(req.adress, &result);
+  bool ret = motion_ctrl_->readFromIO(req.address, &result);
   res.success = ret;
   res.value = result;
 
@@ -306,7 +306,7 @@ bool MotomanRosServices::ioReadCB(motoman_msgs::ReadIO::Request &req,
 bool MotomanRosServices::ioWriteCB(motoman_msgs::WriteIO::Request &req,
                                    motoman_msgs::WriteIO::Response &res)
 {
-  int adress = req.adress;
+  int adress = req.address;
   if (adress >= 10010 && adress <= 12567)
   {
     ROS_INFO_STREAM("Write to Universal output: #" << adress);
@@ -331,7 +331,7 @@ bool MotomanRosServices::ioWriteCB(motoman_msgs::WriteIO::Request &req,
     return true;
   }
 
-  bool ret = motion_ctrl_->writeToIO(req.adress, req.value);
+  bool ret = motion_ctrl_->writeToIO(req.address, req.value);
   res.success = ret;
 
   if (!res.success)

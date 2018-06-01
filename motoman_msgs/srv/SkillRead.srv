@@ -1,6 +1,6 @@
 
 ---
 bool success
-string status_message
+string message
 string[] cmd
 bool[] skill_pending
