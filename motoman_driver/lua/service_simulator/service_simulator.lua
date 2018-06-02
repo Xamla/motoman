@@ -102,13 +102,14 @@ local function initializeRobotState()
 end
 
 
-local function printXamlaBanner()
-  print([[
+local function printSplash()
+    print([[
     _  __                __
    | |/ /___ _____ ___  / /___ _
    |   / __ `/ __ `__ \/ / __ `/
   /   / /_/ / / / / / / / /_/ /
  /_/|_\__,_/_/ /_/ /_/_/\__,_/]])
+    print('SDA service simulator v0.1\n')
 end
 
 
@@ -593,14 +594,24 @@ end
 
 
 local function main()
-    ros.init('sda_service_simulator')
+    printSplash()
+
+    local ros_args = {}
+
+    -- filter ROS special command line args, see http://wiki.ros.org/Remapping%20Arguments
+    for k,v in pairs(arg) do
+        if v:sub(1, 2) == '__' then
+            table.insert(ros_args, v)
+            arg[k] = nil
+        end
+    end
+
+    -- ros initialization
+    local ros_init_options = 0
+    ros.init('sda_service_simulator', ros_init_options, ros_args)
     nh = ros.NodeHandle()
 
-    printXamlaBanner()
-    print('SDA service simulator v0.1\n')
-
     initializeRobotState()
-
     advertiseSerices()
 
     local wait = ros.Rate(10)   -- spin with 10 Hz
