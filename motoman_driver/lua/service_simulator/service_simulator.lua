@@ -122,6 +122,8 @@ end
 --- std_srvs/Trigger
 local function handleRobotEnable(request, response, header)
     robot_state.robot_enabled = true
+    response.success = true;
+    response.message = 'ok';
     return true
 end
 
@@ -129,6 +131,8 @@ end
 --- std_srvs/Trigger
 local function handleRobotDisable(request, response, header)
     robot_state.robot_enabled = false
+    response.success = true;
+    response.message = 'ok';
     return true
 end
 
