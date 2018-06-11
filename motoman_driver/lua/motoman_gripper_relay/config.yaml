@@ -1,0 +1,10 @@
+gripper_list:
+  - id: 0
+    ns: /xamla/wsg_driver/wsg50_left
+    action_ns: gripper_control
+  - id: 1
+    ns: /xamla/wsg_driver/wsg50_right
+    action_ns: gripper_control
+
+robot_ns: /sda10d
+

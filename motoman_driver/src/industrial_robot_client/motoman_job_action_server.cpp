@@ -81,12 +81,34 @@ void JobActionServer::doWork()
     if (!findTaskNoOfStartedJob(goal->job_name, task_no))
     {
       reason_for_abort = "Job was not found in tasks.";
-      this->abort(reason_for_abort, ERROR_CODE::spJobNotFound);
+      //this->abort(reason_for_abort, ERROR_CODE::spJobNotFound);
+      //this->cur_job_state.message = reason_for_abort;
       return;
     }
+
+    bool success = false;
+    int onHold = -1;
+    int onPlay = -1;
+    success = motion_ctrl_.getPlayStatus(onPlay, onHold, error_number);
+
     publishFeedback();
+
+    if (onHold > 0)
+    {
+        ROS_INFO("Job is Paused");
+        this->job_exe_state = JOB_EXECUTION_STATE::ONHOLD;
+        this->cur_job_state.is_onhold = true;
+        return;
+    }
+    else if(this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD && onPlay > 0)
+    {
+        ROS_INFO("Job is Restarting");
+        this->job_exe_state = JOB_EXECUTION_STATE::RESTARTING;
+    }
+
     int exp_time = 0;
-    bool success = motion_ctrl_.waitForJobEnd(this->cur_job_state.task_no, exp_time, error_number);
+    success = motion_ctrl_.waitForJobEnd(this->cur_job_state.task_no, exp_time, error_number);
+
     if (success)
     {
       motoman_msgs::StartJobResult result;
@@ -97,10 +119,11 @@ void JobActionServer::doWork()
         if (this->job_exe_state == JOB_EXECUTION_STATE::RESTARTING)
         {
           ROS_INFO("Restart");
-          if (!this->resumeJob())
-          {
-            ROS_ERROR("ResumeJob not successful");
-          }
+          this->cur_job_state.is_onhold = false;
+          //if (!this->resumeJob())
+          //{
+          //  ROS_ERROR("ResumeJob not successful");
+          //}
           break;
         }
         else if (this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD)
@@ -128,6 +151,7 @@ void JobActionServer::doWork()
         break;
       case ERROR_CODE::holdPP:
       {
+        /*
         ros::Time _time = ros::Time::now();
         if (this->cur_job_state.is_onhold == false)
         {
@@ -158,6 +182,7 @@ void JobActionServer::doWork()
           ROS_DEBUG("Trigger Restarting");
           this->job_exe_state = JOB_EXECUTION_STATE::RESTARTING;
         }
+        */
         break;
       }
       case ERROR_CODE::holdExternal:
@@ -169,8 +194,8 @@ void JobActionServer::doWork()
       case ERROR_CODE::errorAlarmStatus:
         ROS_INFO("waitForJobEnd: Hold command active");
       case ERROR_CODE::servosOff:
-        reason_for_abort = motoman::ros_services::printErrorCode(error_number);
-        this->abort(reason_for_abort, (ERROR_CODE)error_number);
+        //reason_for_abort = motoman::ros_services::printErrorCode(error_number);
+        //this->abort(reason_for_abort, (ERROR_CODE)error_number);
         break;
       case ERROR_CODE::timeout:
         this->job_exe_state = JOB_EXECUTION_STATE::MOVING;

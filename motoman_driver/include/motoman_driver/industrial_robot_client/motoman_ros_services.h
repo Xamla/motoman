@@ -57,6 +57,10 @@
 #include "motoman_msgs/SkillEnd.h"
 #include "motoman_msgs/SkillRead.h"
 #include "motoman_msgs/SetAlarm.h"
+#include "motoman_msgs/GetPlayStatus.h"
+#include "motoman_msgs/GetMode.h"
+#include "motoman_msgs/GetServoPower.h"
+#include "motoman_msgs/SetServoPower.h"
 
 namespace motoman
 {
@@ -257,10 +261,50 @@ protected:
    */
   ros::ServiceServer srv_skillEnd_;
 
-    /**
+  /**
    * \brief Service used to  in controller.
    */
   ros::ServiceServer srv_setAlarm_;
+
+  /**
+   * \brief Service used to get the play status of controller.
+   */
+  ros::ServiceServer srv_getPlayStatus_;
+
+  /**
+   * \brief Service used to get operation mode of controller.
+   */
+  ros::ServiceServer srv_getMode_;
+
+  /**
+   * \brief Service used to get status of servo power.
+   */
+  ros::ServiceServer srv_getServoPower_;
+
+  /**
+   * \brief Service used to set status of servo power.
+   */
+  ros::ServiceServer srv_setServoPower_;
+
+  /**
+   * \brief Service used to get job start date.
+   */
+  ros::ServiceServer srv_getJobDate_;
+
+  bool getJobDateCB(motoman_msgs::GetJobDate::Request &req,
+                      motoman_msgs::GetJobDate::Response &res);
+
+  bool setServoPowerCB(motoman_msgs::SetServoPower::Request &req,
+                      motoman_msgs::SetServoPower::Response &res);
+
+  bool getServoPowerCB(motoman_msgs::GetServoPower::Request &req,
+                      motoman_msgs::GetServoPower::Response &res);
+
+  bool getModeCB(motoman_msgs::GetMode::Request &req,
+                 motoman_msgs::GetMode::Response &res);
+
+  bool getPlayStatusCB(motoman_msgs::GetPlayStatus::Request &req,
+                       motoman_msgs::GetPlayStatus::Response &res);
 
   bool setAlarmCB(motoman_msgs::SetAlarm::Request &req,
                   motoman_msgs::SetAlarm::Response &res);

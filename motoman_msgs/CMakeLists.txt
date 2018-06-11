@@ -26,6 +26,8 @@ add_service_files(
   SetMasterJob.srv
   SetCurJob.srv
   GetCurJob.srv
+  GetPlayStatus.srv
+  GetMode.srv
   ResetAlarm.srv
   Hold.srv
   GetMasterJob.srv
@@ -36,6 +38,9 @@ add_service_files(
   SkillEnd.srv
   SkillRead.srv
   SetAlarm.srv
+  SetServoPower.srv
+  GetServoPower.srv
+  GetJobDate.srv
   )
 
 add_action_files(

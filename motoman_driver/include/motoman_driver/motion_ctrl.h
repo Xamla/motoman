@@ -45,6 +45,7 @@
 #include "motoman_msgs/UserVarPrimitive.h"
 #include "motoman_msgs/SkillEnd.h"
 #include "motoman_msgs/SkillRead.h"
+#include "motoman_msgs/GetJobDate.h"
 
 namespace motoman
 {
@@ -243,24 +244,72 @@ typedef struct _READ_FILE_CHUNK_RSP_DATA READ_FILE_CHUNK_RSP_DATA;
 struct _READ_SKILL_RSP_DATA
 {
   uint32_t skillPending[2]; // boolean value for each robotNo (1 = TRUE, 0 = FALSE)
-  char cmd[2][256];   // skill command text
+  char cmd[2][256];         // skill command text
 } __attribute__((__packed__));
 typedef struct _READ_SKILL_RSP_DATA READ_SKILL_RSP_DATA;
 
 struct _END_SKILL_SEND_DATA
 {
-    uint16_t robotNo;
-    char reserved[2];
+  uint16_t robotNo;
+  char reserved[2];
 } __attribute__((__packed__));
 typedef struct _END_SKILL_SEND_DATA END_SKILL_SEND_DATA;
 
 struct _SET_ALARM_SEND_DATA
 {
-    int16_t alm_code;
-    uint8_t sub_code;
-    char alm_msg[33];
+  int16_t alm_code;
+  uint8_t sub_code;
+  char alm_msg[33];
 } __attribute__((__packed__));
 typedef struct _SET_ALARM_SEND_DATA SET_ALARM_SEND_DATA;
+
+struct _MP_PLAY_STATUS_RSP_DATA
+{
+  int16_t sStart;
+  int16_t sHold;
+} __attribute__((__packed__));
+typedef struct _MP_PLAY_STATUS_RSP_DATA MP_PLAY_STATUS_RSP_DATA;
+
+struct _MP_MODE_RSP_DATA
+{
+  int16_t sMode;
+  int16_t sRemote;
+} __attribute__((__packed__));
+typedef struct _MP_MODE_RSP_DATA MP_MODE_RSP_DATA;
+
+struct _MP_SERVO_POWER_RSP_DATA
+{
+  uint16_t sServoPower;
+  char reserved[2];
+} __attribute__((__packed__));
+typedef struct _MP_SERVO_POWER_RSP_DATA MP_SERVO_POWER_RSP_DATA;
+
+struct _MP_SERVO_POWER_SEND_DATA
+{
+  uint16_t sServoPower;
+  char reserved[2];
+} __attribute__((__packed__));
+typedef struct _MP_SERVO_POWER_SEND_DATA MP_SERVO_POWER_SEND_DATA;
+
+struct _MP_JOB_NAME_SEND_DATA
+{
+  char cJobName[33];
+  char reserved[3];
+} __attribute__((__packed__));
+typedef struct _MP_JOB_NAME_SEND_DATA MP_JOB_NAME_SEND_DATA;
+
+struct _MP_SYS_TIME_RSP_DATA
+{
+  int16_t sStartYear;
+  int16_t sStartMonth;
+  int16_t sStartDay;
+  int16_t sStartHour;
+  int16_t sStartMin;
+  int16_t sStartSec;
+  int32_t lElapsedTime;
+} __attribute__((__packed__));
+typedef struct _MP_SYS_TIME_RSP_DATA MP_SYS_TIME_RSP_DATA;
+
 
 class MotomanMotionCtrl
 {
@@ -296,12 +345,18 @@ public:
   bool deleteJob(const std::string jobName, int &errorNumber);
   bool startJob(int taskNumber, std::string jobName, int &errorNumber);
   bool setHold(int hold, int &errorNumber);
+  bool getMode(int &sMode, int &sRemote, int &errorNumber);
+  bool getPlayStatus(int &sStart, int &sHold, int &errorNumber);
+  bool getJobDate(const std::string jobName, int &year, int &month, int &day, int &hour, int &min, int &sec, int &lElapsedTime, int &errorNumber);
   bool waitForJobEnd(int taskNumber, int time, int &errorNumber);
   bool getMasterJob(int taskNumber, std::string &jobName);
   bool setMasterJob(int taskNumber, const std::string &jobName, int &errorNumber);
 
   bool getCurJob(int taskNumber, int &jobLine, int &step, std::string &jobName);
   bool setCurJob(int jobLine, const std::string &jobName, int &errorNumber);
+
+  bool getServoPower(int &servoPower, int &errorNumber);
+  bool setServoPower(const int servoPower, int &errorNumber);
 
   bool putUserVars(const motoman_msgs::PutUserVars::Request &req, motoman_msgs::PutUserVars::Response &res);
   bool getUserVars(const motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res);

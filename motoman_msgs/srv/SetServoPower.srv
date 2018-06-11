@@ -1,0 +1,8 @@
+bool power_on # Power on = true, off = false
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # error code
+# 0x0000 Normal end
+# 0x2060 In error/alarm status
+# 0x3450 Failed (Unable to turn servo on)

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<launch>
+<group ns="WsgMotomanClient">
+  <rosparam command="load" file="./config.yaml" />
+</group>
+
+</launch>

@@ -557,6 +557,72 @@ local function handleWaitForJobEnd(request, response, header)
 end
 
 
+--- motoman_msgs/GetPlayStatus
+--[[
+    ---
+    bool success
+    string message  # informational, e.g. for error messages
+    int32 err_no    # 0 Normal end, -1 Error
+    int32 on_hold   # 1 Hold ON, 0 Hold OFF
+    int32 on_play   # 1 Start ON, 0 Start OFF
+]]
+local function handleGetPlayStatus(request, response, header)
+    response.success = true
+    response.message = 'ok'
+    return true
+end
+
+
+--- motoman_msgs/GetMode
+--[[
+    ---
+    bool success
+    string message  # informational, e.g. for error messages
+    int32 err_no    # 0 Normal end, -1 Error
+    int32 s_mode   # 1 TEACH, 2 PLAY
+    int32 s_remote # 0 Remote OFF, 1 Remote ON
+]]
+local function handleGetMode(request, response, header)
+    response.success = true
+    response.message = 'ok'
+    return true
+end
+
+
+--- motoman_msgs/SetServoPower
+--[[
+    bool power_on # Power on = true, off = false
+    ---
+    bool success
+    string message  # informational, e.g. for error messages
+    int32 err_no    # error code
+    # 0x0000 Normal end
+    # 0x2060 In error/alarm status
+    # 0x3450 Failed (Unable to turn servo on)
+]]
+local function handleSetServoPower(request, response, header)
+    response.success = true
+    response.message = 'ok'
+    return true
+end
+
+
+--- motoman_msgs/GetServoPower
+--[[
+
+    ---
+    bool success
+    string message  # informational, e.g. for error messages
+    int32 err_no    # error code
+    bool power_on # Power on = true, off = false
+]]
+local function handleGetServoPower(request, response, header)
+    response.success = true
+    response.message = 'ok'
+    return true
+end
+
+
 local function advertiseSerices()
     services['/robot_enable']  = { type = 'std_srvs/Trigger', handler = handleRobotEnable }
     services['/robot_disable'] = { type = 'std_srvs/Trigger', handler = handleRobotDisable }
@@ -566,7 +632,7 @@ local function advertiseSerices()
     services.get_cur_job      = { type = 'motoman_msgs/GetCurJob', handler = handleGetCurJob }
     services.get_master_job   = { type = 'motoman_msgs/GetMasterJob', handler = handleGetMasterJob }
     services.get_user_vars    = { type = 'motoman_msgs/GetUserVars', handler = handleGetUserVars }
-    services.hold_job         = { type = 'motoman_msgs/Hold', handler = simpleHandler }
+    services.hold             = { type = 'motoman_msgs/Hold', handler = simpleHandler }
     services.io_read          = { type = 'motoman_msgs/ReadIO', handler = handleIORead }
     services.io_write         = { type = 'motoman_msgs/WriteIO', handler = handleIOWrite }
     services.list_jobs        = { type = 'motoman_msgs/ListJobs', handler = handleListJobs }
@@ -579,6 +645,10 @@ local function advertiseSerices()
     services.skill_read       = { type = 'motoman_msgs/SkillRead', handler = handleSkillRead }
     services.start_job        = { type = 'motoman_msgs/StartJob', handler = handleStartJob }
     services.wait_for_job_end = { type = 'motoman_msgs/WaitForJobEnd', handler = handleWaitForJobEnd }
+    services.get_play_status  = { type = 'motoman_msgs/GetPlayStatus', handler = handleGetPlayStatus }
+    services.get_mode         = { type = 'motoman_msgs/GetMode', handler = handleGetMode }
+    services.set_servo_power  = { type = 'motoman_msgs/SetServoPower', handler = handleSetServoPower }
+    services.get_servo_power  = { type = 'motoman_msgs/GetServoPower', handler = handleGetServoPower }
 
     for name,svc in pairs(services) do
         ros.INFO('Starting simulated service "%s" (%s)', name, svc.type)

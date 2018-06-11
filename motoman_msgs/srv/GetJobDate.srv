@@ -1,0 +1,14 @@
+
+string job_name
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # error code
+int32 elapsed_time
+int32 year
+int32 month
+int32 day
+int32 hour
+int32 minutes
+int32 seconds
+

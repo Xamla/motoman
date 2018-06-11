@@ -47,7 +47,7 @@ MotomanRosServices::MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeH
 
   srv_list_jobs_ = node_->advertiseService("list_jobs", &MotomanRosServices::listJobsCB, this);
 
-  srv_hold_ = node_->advertiseService("hold_job", &MotomanRosServices::holdCB, this);
+  srv_hold_ = node_->advertiseService("hold", &MotomanRosServices::holdCB, this);
   srv_startJob_ = node_->advertiseService("start_job", &MotomanRosServices::startJobCB, this);
   srv_waitForJobEnd_ = node_->advertiseService("wait_for_job_end", &MotomanRosServices::waitForJobEndCB, this);
 
@@ -66,6 +66,14 @@ MotomanRosServices::MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeH
 
   srv_skillRead_ = node_->advertiseService("skill_read", &MotomanRosServices::skillReadCB, this);
   srv_skillEnd_ = node_->advertiseService("skill_end", &MotomanRosServices::skillEndCB, this);
+
+  srv_getPlayStatus_ = node_->advertiseService("get_play_status", &MotomanRosServices::getPlayStatusCB, this);
+  srv_getMode_ = node_->advertiseService("get_mode", &MotomanRosServices::getModeCB, this);
+
+  srv_setServoPower_ = node_->advertiseService("set_servo_power", &MotomanRosServices::setServoPowerCB, this);
+  srv_getServoPower_ = node_->advertiseService("get_servo_power", &MotomanRosServices::getServoPowerCB, this);
+
+  srv_getJobDate_ = node_->advertiseService("get_job_date", &MotomanRosServices::getJobDateCB, this);
 }
 
 MotomanRosServices::~MotomanRosServices()
@@ -177,7 +185,7 @@ bool MotomanRosServices::getMasterJobCB(motoman_msgs::GetMasterJob::Request &req
 }
 
 bool MotomanRosServices::setAlarmCB(motoman_msgs::SetAlarm::Request &req,
-                motoman_msgs::SetAlarm::Response &res)
+                                    motoman_msgs::SetAlarm::Response &res)
 {
   int errorNumber;
   bool ret = motion_ctrl_->setAlarm(req.alm_msg, req.alm_code, req.sub_code, errorNumber);
@@ -271,6 +279,65 @@ bool MotomanRosServices::holdCB(motoman_msgs::Hold::Request &req,
   res.message = printErrorCode(errorNumber);
   res.success = ERROR_CODE::normalEnd == errorNumber;
   return true;
+}
+
+bool MotomanRosServices::getPlayStatusCB(motoman_msgs::GetPlayStatus::Request &req,
+                                         motoman_msgs::GetPlayStatus::Response &res)
+{
+  res.success = motion_ctrl_->getPlayStatus(res.on_play, res.on_hold, res.err_no);
+
+  return res.success;
+}
+
+bool MotomanRosServices::getModeCB(motoman_msgs::GetMode::Request &req,
+                                   motoman_msgs::GetMode::Response &res)
+{
+  res.success = motion_ctrl_->getMode(res.s_mode, res.s_remote, res.err_no);
+
+  return res.success;
+}
+
+bool MotomanRosServices::setServoPowerCB(motoman_msgs::SetServoPower::Request &req,
+                                         motoman_msgs::SetServoPower::Response &res)
+{
+  int errorNumber = -1;
+  res.success = motion_ctrl_->setServoPower(req.power_on ? 1 : 0, errorNumber);
+  res.err_no = errorNumber;
+  res.message = req.power_on ? "Servo Power ON" : "Servo Power OFF";
+  return res.success;
+}
+
+bool MotomanRosServices::getServoPowerCB(motoman_msgs::GetServoPower::Request &req,
+                                         motoman_msgs::GetServoPower::Response &res)
+{
+  int powerOn = -1;
+  int errorNumber = -1;
+  res.success = motion_ctrl_->getServoPower(powerOn, errorNumber);
+  res.err_no = errorNumber;
+  res.power_on = powerOn > 0;
+  res.message = res.power_on ? "Servo Power ON" : "Servo Power OFF";
+  return res.success;
+}
+
+bool MotomanRosServices::getJobDateCB(motoman_msgs::GetJobDate::Request &req,
+                                      motoman_msgs::GetJobDate::Response &res)
+{
+  int year;
+  int month;
+  int day;
+  int sec;
+  int min;
+  int hour;
+  int elapseTime;
+  res.success = motion_ctrl_->getJobDate(req.job_name, year, month, day, hour, min, sec, elapseTime, res.err_no);
+  res.elapsed_time = elapseTime;
+  res.year = year;
+  res.month = month;
+  res.day = day;
+  res.hour = hour;
+  res.minutes = min;
+  res.seconds = sec;
+  return res.success;
 }
 
 /*

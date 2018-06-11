@@ -289,6 +289,44 @@ void bswap(SET_ALARM_SEND_DATA &value)
   value.alm_code = Swap16(value.alm_code);
 }
 
+void bswap(MP_PLAY_STATUS_RSP_DATA &value)
+{
+  value.sStart = Swap16(value.sStart);
+  value.sHold = Swap16(value.sHold);
+}
+
+void bswap(MP_MODE_RSP_DATA &value)
+{
+  value.sMode = Swap16(value.sMode);
+  value.sRemote = Swap16(value.sRemote);
+}
+
+void bswap(MP_SERVO_POWER_SEND_DATA &value)
+{
+  value.sServoPower = Swap16(value.sServoPower);
+}
+
+void bswap(MP_SERVO_POWER_RSP_DATA &value)
+{
+  value.sServoPower = Swap16(value.sServoPower);
+}
+
+void bswap(MP_SYS_TIME_RSP_DATA &value)
+{
+  value.sStartYear = Swap16(value.sStartYear);
+  value.sStartMonth = Swap16(value.sStartMonth);
+  value.sStartDay = Swap16(value.sStartDay);
+  value.sStartHour = Swap16(value.sStartHour);
+  value.sStartMin = Swap16(value.sStartMin);
+  value.sStartSec = Swap16(value.sStartSec);
+  value.lElapsedTime = Swap32(value.lElapsedTime);
+}
+
+void bswap(MP_JOB_NAME_SEND_DATA &value)
+{
+}
+
+
 bool MotomanMotionCtrl::init(SmplMsgConnection *connection, int robot_id)
 {
   connection_ = connection;
@@ -687,6 +725,148 @@ bool MotomanMotionCtrl::setHold(int hold, int &errorNumber)
   return true;
 }
 
+bool MotomanMotionCtrl::getMode(int &sMode, int &sRemote, int &errorNumber)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("mpGetMode");
+
+  data.setFunctionName(str);
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send mpGetMode command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+  errorNumber = status;
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get mpGetMode. Received status: %d", status);
+    return false;
+  }
+
+  if (buffer.size() != sizeof(MP_MODE_RSP_DATA))
+  {
+    ROS_ERROR("buffer size does not add up");
+    return false;
+  }
+
+  MP_MODE_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+
+  sMode = result.sMode;
+  sRemote = result.sRemote;
+
+  return true;
+}
+
+bool MotomanMotionCtrl::getPlayStatus(int &sStart, int &sHold, int &errorNumber)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("mpGetPlayStatus");
+
+  data.setFunctionName(str);
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send mpGetPlayStatus command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+  errorNumber = status;
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get mpGetPlayStatus. Received status: %d", status);
+    return false;
+  }
+
+  if (buffer.size() != sizeof(MP_PLAY_STATUS_RSP_DATA))
+  {
+    ROS_ERROR("buffer size does not add up");
+    return false;
+  }
+
+  MP_PLAY_STATUS_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+  sStart = result.sStart;
+  sHold = result.sHold;
+
+  return true;
+}
+
+bool MotomanMotionCtrl::getJobDate(const std::string jobName, int &year, int &month, int &day, int &hour, int &min, int &sec, int &lElapsedTime, int &errorNumber)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("mpGetJobDate");
+
+  data.setFunctionName(str);
+
+  if (jobName.size() > 32)
+  {
+    ROS_ERROR("jobName is too long: %d", jobName.size());
+    return false;
+  }
+
+  MP_JOB_NAME_SEND_DATA sData;
+  strcpy(sData.cJobName, jobName.c_str());
+  std::vector<char> tmp_vector(sizeof(MP_JOB_NAME_SEND_DATA), 0);
+
+  bswap(sData);
+  memcpy(tmp_vector.data(), &sData, sizeof(MP_JOB_NAME_SEND_DATA));
+
+  data.setArgumentsSize(tmp_vector.size());
+  data.setArgumentsData(tmp_vector);
+
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send mpGetJobDate command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get mpGetJobDate. Received status: %d", status);
+    return false;
+  }
+
+  if (buffer.size() != sizeof(MP_SYS_TIME_RSP_DATA))
+  {
+    ROS_ERROR("buffer size does not add up");
+    return false;
+  }
+
+  MP_SYS_TIME_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+  year = result.sStartYear;
+  month = result.sStartMonth;
+  day = result.sStartDay;
+  hour = result.sStartHour;
+  min = result.sStartMin;
+  sec = result.sStartSec;
+  lElapsedTime = result.lElapsedTime;
+  return true;
+}
+
 bool MotomanMotionCtrl::getMasterJob(int taskNumber, std::string &jobName)
 {
   SimpleRpc data;
@@ -839,6 +1019,94 @@ bool MotomanMotionCtrl::setCurJob(int jobLine, const std::string &jobName, int &
   if (status < 0)
   {
     ROS_ERROR("failed to get mpSetCurJob. Received status: %d", status);
+    return false;
+  }
+
+  if (buffer.size() != sizeof(MP_STD_RSP_DATA))
+  {
+    ROS_ERROR("buffer size does not add up");
+    return false;
+  }
+
+  MP_STD_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+  errorNumber = result.err_no;
+  return true;
+}
+
+bool MotomanMotionCtrl::getServoPower(int &servoPower, int &errorNumber)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("mpGetServoPower");
+
+  data.setFunctionName(str);
+
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send mpGetServoPower command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+  errorNumber = status;
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get mpGetServoPower. Received status: %d", status);
+    return false;
+  }
+
+  if (buffer.size() != sizeof(MP_SERVO_POWER_RSP_DATA))
+  {
+    ROS_ERROR("buffer size does not add up");
+    return false;
+  }
+
+  MP_SERVO_POWER_RSP_DATA result;
+  memcpy(&result, buffer.data(), buffer.size());
+  bswap(result);
+  servoPower = result.sServoPower;
+  return true;
+}
+
+bool MotomanMotionCtrl::setServoPower(const int servoPower, int &errorNumber)
+{
+  SimpleRpc data;
+  SimpleRpcReply reply;
+  data.init(call_id_, 0); //callid, no arguments
+  const std::string str("mpSetServoPower");
+
+  data.setFunctionName(str);
+
+  MP_SERVO_POWER_SEND_DATA sData;
+  sData.sServoPower = servoPower;
+  std::vector<char> tmp_vector(sizeof(MP_SERVO_POWER_SEND_DATA), 0);
+
+  bswap(sData);
+  memcpy(tmp_vector.data(), &sData, sizeof(MP_SERVO_POWER_SEND_DATA));
+
+  data.setArgumentsSize(tmp_vector.size());
+  data.setArgumentsData(tmp_vector);
+
+  if (!this->sendAndReceiveRpc(&data, &reply))
+  {
+    ROS_ERROR("failed to send mpSetServoPower command");
+    return false;
+  }
+  call_id_++;
+  const std::vector<char> buffer = reply.getResultData();
+  const char *result_data = buffer.data();
+
+  int status = reply.getStatus();
+
+  if (status < 0)
+  {
+    ROS_ERROR("failed to get mpSetServoPower. Received status: %d", status);
     return false;
   }
 
@@ -1267,7 +1535,7 @@ bool MotomanMotionCtrl::requestListJobs(int &jobCount, int &fileSize, std::strin
 
 bool MotomanMotionCtrl::endSkill(int robotNo)
 {
-  if (robotNo>1)
+  if (robotNo > 1)
   {
     ROS_ERROR("Robot no can only be 0, 1 but has value %d", robotNo);
   }
@@ -1349,7 +1617,6 @@ bool MotomanMotionCtrl::readSkill(std::vector<int> &skillPending, std::vector<st
 
   return true;
 }
-
 
 bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res)
 {

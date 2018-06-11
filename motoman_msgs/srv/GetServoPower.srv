@@ -1,0 +1,6 @@
+
+---
+bool success
+string message  # informational, e.g. for error messages
+int32 err_no    # error code
+bool power_on # Power on = true, off = false
