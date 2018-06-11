@@ -24,7 +24,10 @@ local robot_state = {
     io_state = {},
     user_variables = {},
     cur_job = {},
-    master_job = {}
+    master_job = {},
+    servo_power_on = false,
+    operation_mode = {s_mode = 2, s_remote = 1},
+    play_state = {on_hold = false, on_play = true}
 }
 
 
@@ -569,6 +572,8 @@ end
 local function handleGetPlayStatus(request, response, header)
     response.success = true
     response.message = 'ok'
+    response.on_hold = robot_state.play_state.on_hold
+    response.on_play = robot_state.play_state.on_play
     return true
 end
 
@@ -585,6 +590,8 @@ end
 local function handleGetMode(request, response, header)
     response.success = true
     response.message = 'ok'
+    response.s_mode = robot_state.operation_mode.s_mode
+    response.s_remote = robot_state.operation_mode.s_remote
     return true
 end
 
@@ -603,6 +610,7 @@ end
 local function handleSetServoPower(request, response, header)
     response.success = true
     response.message = 'ok'
+    robot_state.servo_power_on = response.power_on
     return true
 end
 
@@ -619,6 +627,7 @@ end
 local function handleGetServoPower(request, response, header)
     response.success = true
     response.message = 'ok'
+    response.power_on = robot_state.servo_power_on
     return true
 end
 
