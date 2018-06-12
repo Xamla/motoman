@@ -13,6 +13,9 @@ add_message_files(
   JobPosData.msg
   MovCtrlData.msg
   UserVarPrimitive.msg
+  PlayStatus.msg
+  JobStatus.msg
+  OperationMode.msg
   )
 
 add_service_files(
@@ -41,6 +44,7 @@ add_service_files(
   SetServoPower.srv
   GetServoPower.srv
   GetJobDate.srv
+  Status.srv
   )
 
 add_action_files(

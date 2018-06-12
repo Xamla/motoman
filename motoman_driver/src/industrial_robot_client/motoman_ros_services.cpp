@@ -74,6 +74,7 @@ MotomanRosServices::MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeH
   srv_getServoPower_ = node_->advertiseService("get_servo_power", &MotomanRosServices::getServoPowerCB, this);
 
   srv_getJobDate_ = node_->advertiseService("get_job_date", &MotomanRosServices::getJobDateCB, this);
+  srv_status_ = node_->advertiseService("status", &MotomanRosServices::statusCB, this);
 }
 
 MotomanRosServices::~MotomanRosServices()
@@ -83,6 +84,45 @@ MotomanRosServices::~MotomanRosServices()
 MotomanRosServices::Ptr MotomanRosServices::create(MotomanMotionCtrl *connection, ros::NodeHandle *pn)
 {
   return MotomanRosServices::Ptr(new MotomanRosServices(connection, pn));
+}
+
+
+bool MotomanRosServices::statusCB(motoman_msgs::Status::Request &req,
+                                    motoman_msgs::Status::Response &res)
+{
+  res.play_status.success = motion_ctrl_->getPlayStatus(res.play_status.on_play, res.play_status.on_hold, res.play_status.err_no);
+  int powerOn = -1;
+  int errorNumber = -1;
+  bool success = motion_ctrl_->getServoPower(powerOn, errorNumber);
+  res.power_on = powerOn > 0;
+
+  res.operation_mode.success = motion_ctrl_->getMode(res.operation_mode.s_mode, res.operation_mode.s_remote, res.operation_mode.err_no);
+
+  int taskNumber = 0;
+  int jobLine = -1;
+  int step = -1;
+  std::string jobName;
+  bool ret = motion_ctrl_->getCurJob(taskNumber, jobLine, step, jobName);
+  res.cur_job.success = ret;
+  if (!ret)
+  {
+    res.cur_job.message = "failed to get details of job: " + jobName;
+    return true;
+  }
+
+  res.cur_job.job_line = jobLine;
+  res.cur_job.step = step;
+  res.cur_job.job_name = jobName;
+
+  ret = motion_ctrl_->getMasterJob(taskNumber, jobName);
+  if (!ret)
+  {
+    res.cur_job.message = "failed to get master job: " + jobName;
+    return true;
+  }
+  res.cur_job.master_job_name = jobName;
+
+  return true;
 }
 
 bool MotomanRosServices::listJobsCB(motoman_msgs::ListJobs::Request &req,

@@ -61,6 +61,7 @@
 #include "motoman_msgs/GetMode.h"
 #include "motoman_msgs/GetServoPower.h"
 #include "motoman_msgs/SetServoPower.h"
+#include "motoman_msgs/Status.h"
 
 namespace motoman
 {
@@ -291,14 +292,22 @@ protected:
    */
   ros::ServiceServer srv_getJobDate_;
 
+  /**
+   * \brief Service used to get aggregated status.
+   */
+  ros::ServiceServer srv_status_;
+
+  bool statusCB(motoman_msgs::Status::Request &req,
+                motoman_msgs::Status::Response &res);
+
   bool getJobDateCB(motoman_msgs::GetJobDate::Request &req,
-                      motoman_msgs::GetJobDate::Response &res);
+                    motoman_msgs::GetJobDate::Response &res);
 
   bool setServoPowerCB(motoman_msgs::SetServoPower::Request &req,
-                      motoman_msgs::SetServoPower::Response &res);
+                       motoman_msgs::SetServoPower::Response &res);
 
   bool getServoPowerCB(motoman_msgs::GetServoPower::Request &req,
-                      motoman_msgs::GetServoPower::Response &res);
+                       motoman_msgs::GetServoPower::Response &res);
 
   bool getModeCB(motoman_msgs::GetMode::Request &req,
                  motoman_msgs::GetMode::Response &res);
