@@ -107,7 +107,7 @@ function WsgMotomanClient:process()
     if self.gripper_client[gripper_id] ~= nil then
         local success, task
         if id == 0 then
-            task = self.gripper_client[gripper_id]:home(50000)
+            task = self.gripper_client[gripper_id]:home(20000)
             if task:hasCompletedSuccessfully() == false then
                 self:setAlarm(sf('home gripper [id: %d] failed', gripper_id), 1)
             end
@@ -117,13 +117,14 @@ function WsgMotomanClient:process()
                 tonumber(tokens[3]) / 1000,
                 tonumber(tokens[4]) / 1000,
                 tonumber(tokens[5]),
-                2000
+                20000
             )
             if task:hasCompletedSuccessfully() == false then
                 self:setAlarm(sf('grasp gripper [id: %d] failed', gripper_id))
             end
         elseif id == 2 then
-            task = self.gripper_client[gripper_id]:release(tonumber(tokens[3]) / 1000, tonumber(tokens[4]) / 1000, 2000)
+            task =
+                self.gripper_client[gripper_id]:release(tonumber(tokens[3]) / 1000, tonumber(tokens[4]) / 1000, 20000)
 
             if task:hasCompletedSuccessfully() == false then
                 self:setAlarm(sf('release gripper [id: %d] failed', gripper_id), 2)
@@ -134,7 +135,8 @@ function WsgMotomanClient:process()
                 tonumber(tokens[3]) / 1000,
                 tonumber(tokens[4]) / 1000,
                 tonumber(tokens[5]),
-                2000
+                tonumber(tokens[6]) ~= 0,
+                20000
             )
 
             if task:hasCompletedSuccessfully() == false then
