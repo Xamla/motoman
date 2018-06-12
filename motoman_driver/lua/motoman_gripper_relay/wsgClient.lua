@@ -57,21 +57,20 @@ function WsgMotomanClient:__init(node_handle)
     if config.gripper_list then
         for i, v in ipairs(config.gripper_list) do
             ros.INFO('create id %d, namspace: %s', v.id, v.ns)
-            self.gripper_client[v.id] =
-                grippers.WeissTwoFingerModel(node_handle, v.ns, string.format('%s/%s', v.ns, v.action_ns))
-            print(string.format('%s/%s', v.ns, v.action_ns))
+            self.gripper_client[v.id] = grippers.WeissTwoFingerModel(node_handle, v.ns, v.action_ns)
+            ros.INFO('connected to %s/%s', v.ns, v.action_ns)
         end
     end
 end
 
-function WsgMotomanClient:setAlarm(msg)
+function WsgMotomanClient:setAlarm(msg, code)
     local req = self.set_alarm_srv:createRequest()
-    req.alm_code = 8000
-    req.sub_code = 0
+    req.alm_code = 8055
+    req.sub_code = math.max(code or 1, 1)
     req.alm_msg = msg
     local res = self.set_alarm_srv:call(req)
     if res then
-        print ("Alarm could be set: " .. res.message )
+        ros.INFO('Alarm could be set: %s. Message: %s', tostring(res.message), msg)
     end
 end
 
@@ -106,37 +105,54 @@ function WsgMotomanClient:process()
 
     local gripper_id = tonumber(tokens[2])
     if self.gripper_client[gripper_id] ~= nil then
+        local success, task
         if id == 0 then
-            self.gripper_client[gripper_id]:homeGripper(ros.Duration(5))
+            task = self.gripper_client[gripper_id]:home(50000)
+            if task:hasCompletedSuccessfully() == false then
+                self:setAlarm(sf('home gripper [id: %d] failed', gripper_id), 1)
+            end
         elseif id == 1 then
-            self.gripper_client[gripper_id]:closeGripper(
+            task =
+                self.gripper_client[gripper_id]:grasp(
                 tonumber(tokens[3]) / 1000,
-                tonumber(tokens[5]),
                 tonumber(tokens[4]) / 1000,
-                nil,
-                ros.Duration(20)
+                tonumber(tokens[5]),
+                2000
             )
+            if task:hasCompletedSuccessfully() == false then
+                self:setAlarm(sf('grasp gripper [id: %d] failed', gripper_id))
+            end
         elseif id == 2 then
-            self.gripper_client[gripper_id]:openGripper(
-                tonumber(tokens[3]) / 1000,
-                tonumber(tokens[5]),
-                tonumber(tokens[4]) / 1000,
-                nil,
-                ros.Duration(20)
-            )
+            task = self.gripper_client[gripper_id]:release(tonumber(tokens[3]) / 1000, tonumber(tokens[4]) / 1000, 2000)
+
+            if task:hasCompletedSuccessfully() == false then
+                self:setAlarm(sf('release gripper [id: %d] failed', gripper_id), 2)
+            end
         elseif id == 3 then
-            self.gripper_client[gripper_id]:openGripper(
+            task =
+                self.gripper_client[gripper_id]:move(
                 tonumber(tokens[3]) / 1000,
-                tonumber(tokens[5]),
                 tonumber(tokens[4]) / 1000,
-                nil,
-                ros.Duration(20)
+                tonumber(tokens[5]),
+                2000
             )
+
+            if task:hasCompletedSuccessfully() == false then
+                self:setAlarm(sf('move gripper with id: %d failed', gripper_id), 3)
+            end
         elseif id == 4 then
-            self.gripper_client[gripper_id]:ackGripper()
+            success =
+                pcall(
+                function()
+                    self.gripper_client[gripper_id]:acknowledgeError()
+                end
+            )
+            if success == false then
+                self:setAlarm(sf('ack_err gripper [id: %d] failed', gripper_id), 4)
+            end
         end
     else
-        self:setAlarm(string.format('no gripper with id: %d', gripper_id))
+        self:setAlarm(sf('no gripper with id: %d', gripper_id), 5)
     end
 
     req = self.skill_end_client:createRequest()
