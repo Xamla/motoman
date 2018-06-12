@@ -179,14 +179,14 @@ bool MotomanRosServices::skillEndCB(motoman_msgs::SkillEnd::Request &req,
 bool MotomanRosServices::getUserVarsCB(motoman_msgs::GetUserVars::Request &req,
                                        motoman_msgs::GetUserVars::Response &res)
 {
-  bool ret = motion_ctrl_->getUserVars(req, res);
+  res.success = motion_ctrl_->getUserVars(req, res);
   return true;
 }
 
 bool MotomanRosServices::putUserVarsCB(motoman_msgs::PutUserVars::Request &req,
                                        motoman_msgs::PutUserVars::Response &res)
 {
-  bool ret = motion_ctrl_->putUserVars(req, res);
+  res.success = motion_ctrl_->putUserVars(req, res);
   return true;
 }
 
@@ -304,6 +304,7 @@ bool MotomanRosServices::startJobCB(motoman_msgs::StartJob::Request &req,
   int task_no = req.task_no;
   int errorNumber;
   res.success = motion_ctrl_->startJob(task_no, jobName, errorNumber);
+  ROS_INFO("%s", printErrorCode(errorNumber).c_str());
   res.message = printErrorCode(errorNumber);
   res.err_no = errorNumber;
   return true;
@@ -381,7 +382,7 @@ bool MotomanRosServices::getJobDateCB(motoman_msgs::GetJobDate::Request &req,
 }
 
 /*
- * Valid Adresses (dx100)
+ * Valid Addresses (dx100)
  * 10010 - 12567 Universal output #10010 - #12567(2048)
  * 60010 - 60647 Interface panel #60010 - #60647(512)
  * 25010 - 27567 Network input #25010 - #27567(2048)
@@ -392,19 +393,12 @@ bool MotomanRosServices::ioReadCB(motoman_msgs::ReadIO::Request &req,
                                   motoman_msgs::ReadIO::Response &res)
 {
   int result = 0;
-  bool ret = motion_ctrl_->readFromIO(req.address, &result);
-  res.success = ret;
+  res.success = motion_ctrl_->readFromIO(req.address, &result, res.message);
   res.value = result;
 
-  if (!res.success)
-  {
-    res.message = "Could not read from adress";
-    ROS_ERROR_STREAM(res.message);
-  }
-  else
+  if (res.success)
   {
     res.message = "OK";
-    ROS_WARN_STREAM(res.message);
   }
 
   return true;
@@ -413,40 +407,35 @@ bool MotomanRosServices::ioReadCB(motoman_msgs::ReadIO::Request &req,
 bool MotomanRosServices::ioWriteCB(motoman_msgs::WriteIO::Request &req,
                                    motoman_msgs::WriteIO::Response &res)
 {
-  int adress = req.address;
-  if (adress >= 10010 && adress <= 12567)
+  int address = req.address;
+  if (address >= 10010 && address <= 12567)
   {
-    ROS_INFO_STREAM("Write to Universal output: #" << adress);
+    ROS_INFO_STREAM("Write to Universal output: #" << address);
   }
-  else if (adress >= 60010 && adress <= 60647)
+  else if (address >= 60010 && address <= 60647)
   {
-    ROS_INFO_STREAM("Write to Interface panel: #" << adress);
+    ROS_INFO_STREAM("Write to Interface panel: #" << address);
   }
-  else if (adress >= 25010 && adress <= 27567)
+  else if (address >= 25010 && address <= 27567)
   {
-    ROS_INFO_STREAM("Network input: #" << adress);
+    ROS_INFO_STREAM("Network input: #" << address);
   }
-  else if (adress >= 1000000 && adress <= 1000559)
+  else if (address >= 1000000 && address <= 1000559)
   {
-    ROS_INFO_STREAM("Register: #" << adress);
+    ROS_INFO_STREAM("Register: #" << address);
   }
   else
   {
     res.success = false;
-    res.message = "Could not write in this specific adress. Out of bounds ";
-    ROS_ERROR_STREAM(res.message << adress);
+    res.message = "Could not write in this specific address. Out of bounds ";
+    ROS_ERROR_STREAM(res.message << address);
     return true;
   }
 
-  bool ret = motion_ctrl_->writeToIO(req.address, req.value);
+  bool ret = motion_ctrl_->writeToIO(req.address, req.value,res.message);
   res.success = ret;
 
-  if (!res.success)
-  {
-    res.message = "Could not read from adress";
-    ROS_ERROR_STREAM(res.message);
-  }
-  else
+  if (res.success)
   {
     res.message = "OK";
   }

@@ -507,7 +507,7 @@ bool MotomanMotionCtrl::startJob(int taskNumber, std::string jobName, int &error
 
   if (jobName.size() > 32)
   {
-    ROS_ERROR("jobName is too long: %d", jobName.size());
+    ROS_ERROR("jobName is too long: %d", (int)jobName.size());
     return false;
   }
 
@@ -519,14 +519,11 @@ bool MotomanMotionCtrl::startJob(int taskNumber, std::string jobName, int &error
 
   MP_START_JOB_SEND_DATA sStartData;
   sStartData.sTaskNo = taskNumber;
-  if (jobName.size() > 0)
+  if (jobName.size() == 0)
   {
-    strcpy(sStartData.cJobName, jobName.c_str());
+    ROS_INFO("[MotomanMotionCtrl::startJob] RESUME JOBS. Job name size: %d", (int)jobName.size());
   }
-  else
-  {
-    ROS_INFO("[MotomanMotionCtrl::startJob]RESUME JOBS");
-  }
+  strcpy(sStartData.cJobName, jobName.c_str());
 
   const int field_length = sizeof(MP_START_JOB_SEND_DATA);
   std::vector<char> tmp_vector;
@@ -817,7 +814,7 @@ bool MotomanMotionCtrl::getJobDate(const std::string jobName, int &year, int &mo
 
   if (jobName.size() > 32)
   {
-    ROS_ERROR("jobName is too long: %d", jobName.size());
+    ROS_ERROR("jobName is too long: %d", (int)jobName.size());
     return false;
   }
 
@@ -841,7 +838,7 @@ bool MotomanMotionCtrl::getJobDate(const std::string jobName, int &year, int &mo
   const char *result_data = buffer.data();
 
   int status = reply.getStatus();
-
+  errorNumber = status;
   if (status < 0)
   {
     ROS_ERROR("failed to get mpGetJobDate. Received status: %d", status);
@@ -990,7 +987,7 @@ bool MotomanMotionCtrl::setCurJob(int jobLine, const std::string &jobName, int &
 
   if (jobName.size() > 32)
   {
-    ROS_ERROR("jobName is too long: %d", jobName.size());
+    ROS_ERROR("jobName is too long: %d", (int)jobName.size());
     return false;
   }
 
@@ -1134,7 +1131,7 @@ bool MotomanMotionCtrl::setMasterJob(int taskNumber, const std::string &jobName,
 
   if (jobName.size() > 32)
   {
-    ROS_ERROR("jobName is too long: %d", jobName.size());
+    ROS_ERROR("jobName is too long: %d", (int)jobName.size());
     return false;
   }
 
@@ -1273,7 +1270,7 @@ bool MotomanMotionCtrl::setAlarm(const std::string &alarm_message, const short a
   data.setFunctionName(str);
   if (alarm_message.size() > 32)
   {
-    ROS_ERROR("alarm_message is too long: %d", alarm_message.size());
+    ROS_ERROR("alarm_message is too long: %d", (int)alarm_message.size());
     return false;
   }
 
@@ -1360,7 +1357,7 @@ bool MotomanMotionCtrl::readFileChunk(int offset, int length, const std::string 
 
   if (fileName.size() > 128)
   {
-    ROS_ERROR("fileName is too long: %d", fileName.size());
+    ROS_ERROR("fileName is too long: %d", (int)fileName.size());
     return false;
   }
 
@@ -1658,9 +1655,10 @@ bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &re
 
     if (status < 0)
     {
-      ROS_ERROR("failed to get mpPutUserVars. Received status: %d", status);
       res.success = false;
       res.err_no = status;
+      res.message = "failed to get mpPutUserVars. Received status: " + std::to_string(status);
+      ROS_ERROR("%s", res.message.c_str());
       return false;
     }
     else
@@ -1668,7 +1666,17 @@ bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &re
       res.success = true;
       res.err_no = status;
     }
+
+    if (buffer.size() < sizeof(MP_USR_VAR_INFO))
+    {
+        res.success = false;
+        res.message = "buffer size does not add up";
+        ROS_ERROR("%s", res.message.c_str());
+        return false;
+    }
     motoman_msgs::UserVarPrimitive resPrim;
+    resPrim.var_type = result_data->var_type;
+    resPrim.var_no = result_data->var_no;
     switch (result_data->var_type)
     {
     case 0:
@@ -1805,7 +1813,7 @@ bool MotomanMotionCtrl::sendAndReceiveRpc(SimpleRpc *data, SimpleRpcReply *reply
   return true;
 }
 
-bool MotomanMotionCtrl::writeToIO(int address, int value)
+bool MotomanMotionCtrl::writeToIO(int address, int value, std::string &errorMessage)
 {
   WriteSingleIO data;
   WriteSingleIOReply reply;
@@ -1818,7 +1826,8 @@ bool MotomanMotionCtrl::writeToIO(int address, int value)
   boost::mutex::scoped_lock lock(this->mutex_);
   if (!this->connection_->sendAndReceiveMsg(req, res))
   {
-    ROS_ERROR("Failed to send message");
+    errorMessage = "Failed to send message";
+    ROS_ERROR("[writeToIO] %s", errorMessage.c_str());
     return false;
   }
   ctrl_reply.init(res);
@@ -1826,7 +1835,9 @@ bool MotomanMotionCtrl::writeToIO(int address, int value)
 
   if (reply.getResultCode() != WriteSingleIOReplyResults::SUCCESS)
   {
-    ROS_ERROR_STREAM("Failed to write to IO: " << getErrorString(reply));
+    errorMessage = "Failed to write IO: ";
+    errorMessage += getErrorString(reply);
+    ROS_ERROR("%s", errorMessage.c_str());
     return false;
   }
 
@@ -1840,7 +1851,7 @@ std::string MotomanMotionCtrl::getErrorString(const WriteSingleIOReply &reply)
   return ss.str();
 }
 
-bool MotomanMotionCtrl::readFromIO(int address, int *value)
+bool MotomanMotionCtrl::readFromIO(int address, int *value, std::string &errorMessage)
 {
   ReadSingleIO data;
   ReadSingleIOReply reply;
@@ -1853,7 +1864,8 @@ bool MotomanMotionCtrl::readFromIO(int address, int *value)
   boost::mutex::scoped_lock lock(this->mutex_);
   if (!this->connection_->sendAndReceiveMsg(req, res))
   {
-    ROS_ERROR("Failed to send message");
+    errorMessage = "Failed to send message";
+    ROS_ERROR("[readFromIO] %s", errorMessage.c_str());
     return false;
   }
   ctrl_reply.init(res);
@@ -1861,7 +1873,9 @@ bool MotomanMotionCtrl::readFromIO(int address, int *value)
 
   if (reply.getResultCode() != ReadSingleIOReplyResults::SUCCESS)
   {
-    ROS_ERROR_STREAM("Failed to read from IO: " << getErrorString(reply));
+    errorMessage = "Failed to read IO: ";
+    errorMessage += getErrorString(reply);
+    ROS_ERROR("%s", errorMessage.c_str());
     return false;
   }
 

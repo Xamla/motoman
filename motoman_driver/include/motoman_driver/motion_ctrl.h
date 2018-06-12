@@ -197,7 +197,7 @@ typedef struct _MP_JOB_STEP_NO_SEND_DATA MP_JOB_STEP_NO_SEND_DATA;
 
 typedef unsigned char MP_B_VAR_BUFF;
 typedef short MP_I_VAR_BUFF;
-typedef long MP_D_VAR_BUFF;
+typedef int32_t MP_D_VAR_BUFF;
 typedef float MP_R_VAR_BUFF;
 typedef char MP_S_VAR_BUFF[16];
 struct _MP_USR_VAR_INFO
@@ -337,8 +337,8 @@ public:
   static std::string getErrorString(const ReadSingleIOReply &reply);
   static std::string getErrorString(const WriteSingleIOReply &reply);
 
-  bool readFromIO(int address, int *value);
-  bool writeToIO(int address, int value);
+  bool readFromIO(int address, int *value, std::string &errorMessage);
+  bool writeToIO(int address, int value, std::string &errorMessage);
 
   bool listJobs(std::vector<std::string> &result);
 

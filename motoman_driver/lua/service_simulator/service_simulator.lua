@@ -262,6 +262,7 @@ end
 
 
 local function handleGetUserVars(request, response, header)
+    print("GetUserVars", tostring(request))
     local variables = response.variables
     local user_variables = robot_state.user_variables
     for i,v in ipairs(request.variables) do
@@ -540,6 +541,7 @@ end
 local function handleStartJob(request, response, header)
     response.success = true
     response.message = 'ok'
+    print("STARTJOB", tostring(request))
     return true
 end
 
@@ -556,6 +558,7 @@ end
 local function handleWaitForJobEnd(request, response, header)
     response.success = true
     response.message = 'ok'
+    print("WAITFORJOBEND    ", tostring(request))
     return true
 end
 
@@ -632,6 +635,42 @@ local function handleGetServoPower(request, response, header)
 end
 
 
+--- motoman_msgs/Status
+--[[
+
+    ---
+    bool power_on # Power on = true, off = false
+    motoman_msgs/OperationMode operation_mode
+    motoman_msgs/PlayStatus play_status
+    motoman_msgs/JobStatus cur_job
+]]
+local function handleStatus(request, response, header)
+    response.success = true
+    response.message = 'ok'
+    response.power_on = robot_state.servo_power_on
+    response.operation_mode = ros.Message('motoman_msgs/OperationMode')
+    response.operation_mode.success = true
+    response.operation_mode.message = 'ok'
+    response.operation_mode.s_mode = robot_state.operation_mode.s_mode
+    response.operation_mode.s_remote = robot_state.operation_mode.s_remote
+    response.play_status = ros.Message('motoman_msgs/PlayStatus')
+    response.play_status.success = true
+    response.play_status.message = 'ok'
+    response.play_status.on_hold = robot_state.play_state.on_hold
+    response.play_status.on_play = robot_state.play_state.on_play
+    response.cur_job = ros.Message('motoman_msgs/JobStatus')
+    local job = robot_state.cur_job[1]
+    response.cur_job.job_line = job.job_line
+    response.cur_job.step = job.step
+    response.cur_job.job_name = job.job_name
+
+    response.cur_job.success = true
+    response.cur_job.message = 'ok'
+    response.cur_job.master_job_name = robot_state.master_job[1]
+    return true
+end
+
+
 local function advertiseSerices()
     services['/robot_enable']  = { type = 'std_srvs/Trigger', handler = handleRobotEnable }
     services['/robot_disable'] = { type = 'std_srvs/Trigger', handler = handleRobotDisable }
@@ -658,6 +697,7 @@ local function advertiseSerices()
     services.get_mode         = { type = 'motoman_msgs/GetMode', handler = handleGetMode }
     services.set_servo_power  = { type = 'motoman_msgs/SetServoPower', handler = handleSetServoPower }
     services.get_servo_power  = { type = 'motoman_msgs/GetServoPower', handler = handleGetServoPower }
+    services.status           = { type = 'motoman_msgs/Status', handler = handleStatus }
 
     for name,svc in pairs(services) do
         ros.INFO('Starting simulated service "%s" (%s)', name, svc.type)
