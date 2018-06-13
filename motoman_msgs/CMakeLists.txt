@@ -44,7 +44,7 @@ add_service_files(
   SetServoPower.srv
   GetServoPower.srv
   GetJobDate.srv
-  Status.srv
+  GetStatus.srv
   GetControllerReady.srv
   )
 
