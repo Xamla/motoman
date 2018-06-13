@@ -91,9 +91,9 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
     motion_ctrl_map_[robot_id] = motion_ctrl;
   }
 
-  disabler_ = node_.advertiseService("/robot_disable", &MotomanJointTrajectoryStreamer::disableRobotCB, this);
+  disabler_ = node_.advertiseService("robot_disable", &MotomanJointTrajectoryStreamer::disableRobotCB, this);
 
-  enabler_ = node_.advertiseService("/robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
+  enabler_ = node_.advertiseService("robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
 
   services_ = MotomanRosServices::create(&motion_ctrl_, &node_);
 
@@ -125,9 +125,9 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
 
   rtn &= motion_ctrl_.init(connection, robot_id_);
 
-  disabler_ = node_.advertiseService("/robot_disable", &MotomanJointTrajectoryStreamer::disableRobotCB, this);
+  disabler_ = node_.advertiseService("robot_disable", &MotomanJointTrajectoryStreamer::disableRobotCB, this);
 
-  enabler_ = node_.advertiseService("/robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
+  enabler_ = node_.advertiseService("robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
   //pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
   return rtn;
 }

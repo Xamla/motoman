@@ -26,6 +26,7 @@ local robot_state = {
     cur_job = {},
     master_job = {},
     servo_power_on = false,
+    controller_ready = false,
     operation_mode = {s_mode = 2, s_remote = 1},
     play_state = {on_hold = false, on_play = true}
 }
@@ -305,6 +306,7 @@ end
     uint64 value
 ]]
 local function handleIORead(request, response, header)
+    print("IORead", tostring(request))
     local address = request.address
     local v = robot_state.io_state[address]
     if v == nil then
@@ -340,6 +342,7 @@ end
     string message # informational, e.g. for error messages
 ]]
 local function handleIOWrite(request, response, header)
+    print("IOWrite", tostring(request))
     local address = request.address
 
     if isValidWriteAddress(address) then
@@ -364,6 +367,7 @@ end
     int32 err_no
 ]]
 local function handlePutUserVars(request, response, header)
+    print("PutUserVars", tostring(request))
     response.success = true
     response.message = 'ok'
     local user_variables = robot_state.user_variables
@@ -401,6 +405,7 @@ end
     int32 err_no # error code
 ]]
 local function handleResetAlarm(request, response, header)
+    print("ResetAlarm", tostring(request))
     response.success = true
     response.message = 'ok'
     return true
@@ -418,6 +423,7 @@ end
     int32 err_no # error code
 ]]
 local function handleSetAlarm(request, response, header)
+    print("SetAlarm", tostring(request))
     response.success = true
     response.message = 'ok'
     return true
@@ -440,7 +446,7 @@ end
     # 0x5200 Over data range
 ]]
 local function handleSetCurJob(request, response, header)
-
+    print("SetCurJob", tostring(request))
     local master_job = robot_state.cur_job[1]
     master_job.job_line = request.job_line
     master_job.job_name = request.job_name
@@ -467,6 +473,7 @@ end
     # 0x4040 Specified JOB not found
 ]]
 local function handleSetMasterJob(request, response, header)
+    print("SetMasterJob", tostring(request))
     if request.task_no < 0 or request.task_no > 15 then
         response.success = false
         response.message = 'task_no out of range (0-15)'
@@ -493,6 +500,7 @@ end
     string message
 ]]
 local function handleSkillEnd(request, response, header)
+    print("SkillEnd", tostring(request))
     response.success = true
     response.message = 'ok'
     return true
@@ -508,6 +516,7 @@ end
     bool[] skill_pending
 ]]
 local function handleSkillRead(request, response, header)
+    print("SkillRead", tostring(request))
     response.success = true
     response.message = 'ok'
     response.cmd = { '', '' }
@@ -541,7 +550,7 @@ end
 local function handleStartJob(request, response, header)
     response.success = true
     response.message = 'ok'
-    print("STARTJOB", tostring(request))
+    print("StartJob", tostring(request))
     return true
 end
 
@@ -573,6 +582,7 @@ end
     int32 on_play   # 1 Start ON, 0 Start OFF
 ]]
 local function handleGetPlayStatus(request, response, header)
+    print("GetPlayStatus", tostring(request))
     response.success = true
     response.message = 'ok'
     response.on_hold = robot_state.play_state.on_hold
@@ -591,6 +601,7 @@ end
     int32 s_remote # 0 Remote OFF, 1 Remote ON
 ]]
 local function handleGetMode(request, response, header)
+    print("GetMode", tostring(request))
     response.success = true
     response.message = 'ok'
     response.s_mode = robot_state.operation_mode.s_mode
@@ -611,6 +622,7 @@ end
     # 0x3450 Failed (Unable to turn servo on)
 ]]
 local function handleSetServoPower(request, response, header)
+    print("SetServoPower", tostring(request))
     response.success = true
     response.message = 'ok'
     robot_state.servo_power_on = response.power_on
@@ -628,6 +640,7 @@ end
     bool power_on # Power on = true, off = false
 ]]
 local function handleGetServoPower(request, response, header)
+    print("GetServoPower", tostring(request))
     response.success = true
     response.message = 'ok'
     response.power_on = robot_state.servo_power_on
@@ -645,8 +658,10 @@ end
     motoman_msgs/JobStatus cur_job
 ]]
 local function handleStatus(request, response, header)
+    print("Status", tostring(request))
     response.success = true
     response.message = 'ok'
+    response.controller_ready = robot_state.controller_ready
     response.power_on = robot_state.servo_power_on
     response.operation_mode = ros.Message('motoman_msgs/OperationMode')
     response.operation_mode.success = true
@@ -671,9 +686,21 @@ local function handleStatus(request, response, header)
 end
 
 
+--- motoman_msgs/GetControllerReady
+--[[
+    ---
+    string message  # informational, e.g. for error messages
+    bool ready # MotoRos motion initialized = true
+]]
+local function handleGetControllerReady(request, response, header)
+    response.ready = robot_state.controller_ready
+    response.message = response.ready and 'OK' or 'Failed to initialize MotoRos motion'
+end
+
+
 local function advertiseSerices()
-    services['/robot_enable']  = { type = 'std_srvs/Trigger', handler = handleRobotEnable }
-    services['/robot_disable'] = { type = 'std_srvs/Trigger', handler = handleRobotDisable }
+    services.robot_enable     = { type = 'std_srvs/Trigger', handler = handleRobotEnable }
+    services.robot_disable    = { type = 'std_srvs/Trigger', handler = handleRobotDisable }
     services.stop_motion      = { type = 'industrial_msgs/StopMotion', handler = handleStopMotion }
     services.cancel_error     = { type = 'motoman_msgs/CancelError', handler = simpleHandler }
     services.delete_job       = { type = 'motoman_msgs/DeleteJob', handler = simpleHandler }
@@ -698,6 +725,7 @@ local function advertiseSerices()
     services.set_servo_power  = { type = 'motoman_msgs/SetServoPower', handler = handleSetServoPower }
     services.get_servo_power  = { type = 'motoman_msgs/GetServoPower', handler = handleGetServoPower }
     services.status           = { type = 'motoman_msgs/Status', handler = handleStatus }
+    services.get_controller_ready = { type = 'motoman_msgs/GetControllerReady', handler = handleGetControllerReady }
 
     for name,svc in pairs(services) do
         ros.INFO('Starting simulated service "%s" (%s)', name, svc.type)
