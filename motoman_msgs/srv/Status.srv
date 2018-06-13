@@ -1,5 +1,6 @@
 
 ---
+bool controller_ready # MotoRos motion initialized
 bool power_on # Power on = true, off = false
 motoman_msgs/OperationMode operation_mode
 motoman_msgs/PlayStatus play_status

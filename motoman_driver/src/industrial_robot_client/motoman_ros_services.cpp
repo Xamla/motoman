@@ -75,6 +75,7 @@ MotomanRosServices::MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeH
 
   srv_getJobDate_ = node_->advertiseService("get_job_date", &MotomanRosServices::getJobDateCB, this);
   srv_status_ = node_->advertiseService("status", &MotomanRosServices::statusCB, this);
+  srv_getControllerReady_ = node_->advertiseService("get_controller_ready", &MotomanRosServices::getControllerReadyCB, this);
 }
 
 MotomanRosServices::~MotomanRosServices()
@@ -86,10 +87,10 @@ MotomanRosServices::Ptr MotomanRosServices::create(MotomanMotionCtrl *connection
   return MotomanRosServices::Ptr(new MotomanRosServices(connection, pn));
 }
 
-
 bool MotomanRosServices::statusCB(motoman_msgs::Status::Request &req,
-                                    motoman_msgs::Status::Response &res)
+                                  motoman_msgs::Status::Response &res)
 {
+  res.controller_ready = motion_ctrl_->controllerReady();
   res.play_status.success = motion_ctrl_->getPlayStatus(res.play_status.on_play, res.play_status.on_hold, res.play_status.err_no);
   int powerOn = -1;
   int errorNumber = -1;
@@ -121,6 +122,22 @@ bool MotomanRosServices::statusCB(motoman_msgs::Status::Request &req,
     return true;
   }
   res.cur_job.master_job_name = jobName;
+
+  return true;
+}
+
+bool MotomanRosServices::getControllerReadyCB(motoman_msgs::GetControllerReady::Request &req,
+                                             motoman_msgs::GetControllerReady::Response &res)
+{
+  res.ready = motion_ctrl_->controllerReady();
+  if (res.ready)
+  {
+    res.message = "OK";
+  }
+  else
+  {
+    res.message = "Uninitialized MotoRos motion";
+  }
 
   return true;
 }
@@ -432,7 +449,7 @@ bool MotomanRosServices::ioWriteCB(motoman_msgs::WriteIO::Request &req,
     return true;
   }
 
-  bool ret = motion_ctrl_->writeToIO(req.address, req.value,res.message);
+  bool ret = motion_ctrl_->writeToIO(req.address, req.value, res.message);
   res.success = ret;
 
   if (res.success)

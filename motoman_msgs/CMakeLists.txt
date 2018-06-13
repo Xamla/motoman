@@ -45,6 +45,7 @@ add_service_files(
   GetServoPower.srv
   GetJobDate.srv
   Status.srv
+  GetControllerReady.srv
   )
 
 add_action_files(

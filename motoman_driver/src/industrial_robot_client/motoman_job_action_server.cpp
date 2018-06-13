@@ -21,7 +21,7 @@ JobActionServer::Ptr JobActionServer::create(std::string base_name, MotomanMotio
 
 void JobActionServer::abort(std::string message_text, ERROR_CODE code)
 {
-  ROS_INFO(message_text.c_str());
+  ROS_INFO("%s", message_text.c_str());
   motoman_msgs::StartJobResult result;
   result.success = false;
   result.status_message = "Job aborted: " + message_text;
@@ -120,10 +120,6 @@ void JobActionServer::doWork()
         {
           ROS_INFO("Restart");
           this->cur_job_state.is_onhold = false;
-          //if (!this->resumeJob())
-          //{
-          //  ROS_ERROR("ResumeJob not successful");
-          //}
           break;
         }
         else if (this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD)
@@ -150,41 +146,8 @@ void JobActionServer::doWork()
         this->cur_job_state.active = false;
         break;
       case ERROR_CODE::holdPP:
-      {
-        /*
-        ros::Time _time = ros::Time::now();
-        if (this->cur_job_state.is_onhold == false)
-        {
-          this->cur_job_state.last_onhold = ros::Time::now();
-          this->cur_job_state.is_onhold = true;
-        }
-        else if ((_time - this->cur_job_state.last_onhold).toSec() < ros::Duration(1.5).toSec())
-        {
-          ROS_DEBUG("ignoring hold %f", (_time - this->cur_job_state.last_onhold).toSec());
-          return;
-        }
-        this->cur_job_state.last_onhold = _time;
-
-        if (this->job_exe_state != JOB_EXECUTION_STATE::ONHOLD && this->job_exe_state != JOB_EXECUTION_STATE::RESTARTING)
-        {
-          ROS_DEBUG("waitForJobEnd: Hold active");
-
-          if (!motion_ctrl_.setHold(1, error_number))
-          {
-            reason_for_abort = "could not call setHold command. Check connection to robot.";
-            this->abort(reason_for_abort, ERROR_CODE::wrongOp);
-            break;
-          }
-          this->job_exe_state = JOB_EXECUTION_STATE::ONHOLD;
-        }
-        else if (this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD)
-        {
-          ROS_DEBUG("Trigger Restarting");
-          this->job_exe_state = JOB_EXECUTION_STATE::RESTARTING;
-        }
-        */
+        ROS_INFO("waitForJobEnd: Hold PP active");
         break;
-      }
       case ERROR_CODE::holdExternal:
         ROS_INFO("waitForJobEnd: Hold external active");
         break;
@@ -202,7 +165,7 @@ void JobActionServer::doWork()
         break;
       default:
         reason_for_abort = motoman::ros_services::printErrorCode(error_number);
-        ROS_INFO(reason_for_abort.c_str());
+        ROS_INFO("%s", reason_for_abort.c_str());
       }
     }
     else

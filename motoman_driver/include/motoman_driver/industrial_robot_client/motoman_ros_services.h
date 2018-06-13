@@ -62,6 +62,7 @@
 #include "motoman_msgs/GetServoPower.h"
 #include "motoman_msgs/SetServoPower.h"
 #include "motoman_msgs/Status.h"
+#include "motoman_msgs/GetControllerReady.h"
 
 namespace motoman
 {
@@ -296,6 +297,14 @@ protected:
    * \brief Service used to get aggregated status.
    */
   ros::ServiceServer srv_status_;
+
+  /**
+  * \brief Service used to check if MotoRos motion are initialized.
+  */
+  ros::ServiceServer srv_getControllerReady_;
+
+  bool getControllerReadyCB(motoman_msgs::GetControllerReady::Request &req,
+                            motoman_msgs::GetControllerReady::Response &res);
 
   bool statusCB(motoman_msgs::Status::Request &req,
                 motoman_msgs::Status::Response &res);
