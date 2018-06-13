@@ -107,24 +107,28 @@ function WsgMotomanClient:process()
     if self.gripper_client[gripper_id] ~= nil then
         local success, task
         if id == 0 then
-            task = self.gripper_client[gripper_id]:home(20000)
+            task = self.gripper_client[gripper_id]:home({timeout = 20000})
             if task:hasCompletedSuccessfully() == false then
                 self:setAlarm(sf('home gripper [id: %d] failed', gripper_id), 1)
             end
         elseif id == 1 then
             task =
                 self.gripper_client[gripper_id]:grasp(
-                tonumber(tokens[3]) / 1000,
-                tonumber(tokens[4]) / 1000,
-                tonumber(tokens[5]),
-                20000
+                {
+                    width = tonumber(tokens[3]) / 1000,
+                    speed = tonumber(tokens[4]) / 1000,
+                    force = tonumber(tokens[5]),
+                    timeout = 20000
+                }
             )
             if task:hasCompletedSuccessfully() == false then
                 self:setAlarm(sf('grasp gripper [id: %d] failed', gripper_id))
             end
         elseif id == 2 then
             task =
-                self.gripper_client[gripper_id]:release(tonumber(tokens[3]) / 1000, tonumber(tokens[4]) / 1000, 20000)
+                self.gripper_client[gripper_id]:release(
+                {width = tonumber(tokens[3]) / 1000, speed = tonumber(tokens[4]) / 1000, timeout = 20000}
+            )
 
             if task:hasCompletedSuccessfully() == false then
                 self:setAlarm(sf('release gripper [id: %d] failed', gripper_id), 2)
@@ -132,11 +136,13 @@ function WsgMotomanClient:process()
         elseif id == 3 then
             task =
                 self.gripper_client[gripper_id]:move(
-                tonumber(tokens[3]) / 1000,
-                tonumber(tokens[4]) / 1000,
-                tonumber(tokens[5]),
-                tonumber(tokens[6]) ~= 0,
-                20000
+                {
+                    width = tonumber(tokens[3]) / 1000,
+                    speed = tonumber(tokens[4]) / 1000,
+                    force = tonumber(tokens[5]),
+                    stop_on_block = tonumber(tokens[6]) ~= 0,
+                    timeout = 20000
+                }
             )
 
             if task:hasCompletedSuccessfully() == false then
