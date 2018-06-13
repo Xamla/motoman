@@ -28,7 +28,7 @@ local robot_state = {
     servo_power_on = false,
     controller_ready = false,
     operation_mode = {s_mode = 2, s_remote = 1},
-    play_state = {on_hold = false, on_play = true}
+    play_state = {s_hold = false, s_start = true}
 }
 
 
@@ -605,7 +605,7 @@ local function handleGetMode(request, response, header)
     response.success = true
     response.message = 'ok'
     response.s_mode = robot_state.operation_mode.s_mode
-    response.s_remote = robot_state.operation_mode.s_remote
+    response.s_remote = 0 < robot_state.operation_mode.s_remote
     return true
 end
 
@@ -657,8 +657,8 @@ end
     motoman_msgs/PlayStatus play_status
     motoman_msgs/JobStatus cur_job
 ]]
-local function handleStatus(request, response, header)
-    print("Status", tostring(request))
+local function handleGetStatus(request, response, header)
+    print("Get  Status", tostring(request))
     response.success = true
     response.message = 'ok'
     response.controller_ready = robot_state.controller_ready
@@ -671,8 +671,8 @@ local function handleStatus(request, response, header)
     response.play_status = ros.Message('motoman_msgs/PlayStatus')
     response.play_status.success = true
     response.play_status.message = 'ok'
-    response.play_status.on_hold = robot_state.play_state.on_hold
-    response.play_status.on_play = robot_state.play_state.on_play
+    response.play_status.s_hold = robot_state.play_state.s_hold
+    response.play_status.s_start = robot_state.play_state.s_start
     response.cur_job = ros.Message('motoman_msgs/JobStatus')
     local job = robot_state.cur_job[1]
     response.cur_job.job_line = job.job_line
@@ -694,7 +694,8 @@ end
 ]]
 local function handleGetControllerReady(request, response, header)
     response.ready = robot_state.controller_ready
-    response.message = response.ready and 'OK' or 'Failed to initialize MotoRos motion'
+    response.message = response.ready and 'OK' or 'Uninitialize MotoRos motion'
+    return true
 end
 
 
@@ -724,7 +725,7 @@ local function advertiseSerices()
     services.get_mode         = { type = 'motoman_msgs/GetMode', handler = handleGetMode }
     services.set_servo_power  = { type = 'motoman_msgs/SetServoPower', handler = handleSetServoPower }
     services.get_servo_power  = { type = 'motoman_msgs/GetServoPower', handler = handleGetServoPower }
-    services.status           = { type = 'motoman_msgs/Status', handler = handleStatus }
+    services.get_status           = { type = 'motoman_msgs/GetStatus', handler = handleGetStatus }
     services.get_controller_ready = { type = 'motoman_msgs/GetControllerReady', handler = handleGetControllerReady }
 
     for name,svc in pairs(services) do

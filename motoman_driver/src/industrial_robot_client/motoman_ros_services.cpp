@@ -74,7 +74,7 @@ MotomanRosServices::MotomanRosServices(MotomanMotionCtrl *connection, ros::NodeH
   srv_getServoPower_ = node_->advertiseService("get_servo_power", &MotomanRosServices::getServoPowerCB, this);
 
   srv_getJobDate_ = node_->advertiseService("get_job_date", &MotomanRosServices::getJobDateCB, this);
-  srv_status_ = node_->advertiseService("status", &MotomanRosServices::statusCB, this);
+  srv_get_status_ = node_->advertiseService("get_status", &MotomanRosServices::getStatusCB, this);
   srv_getControllerReady_ = node_->advertiseService("get_controller_ready", &MotomanRosServices::getControllerReadyCB, this);
 }
 
@@ -87,17 +87,22 @@ MotomanRosServices::Ptr MotomanRosServices::create(MotomanMotionCtrl *connection
   return MotomanRosServices::Ptr(new MotomanRosServices(connection, pn));
 }
 
-bool MotomanRosServices::statusCB(motoman_msgs::Status::Request &req,
-                                  motoman_msgs::Status::Response &res)
+bool MotomanRosServices::getStatusCB(motoman_msgs::GetStatus::Request &req,
+                                     motoman_msgs::GetStatus::Response &res)
 {
   res.controller_ready = motion_ctrl_->controllerReady();
-  res.play_status.success = motion_ctrl_->getPlayStatus(res.play_status.on_play, res.play_status.on_hold, res.play_status.err_no);
+  int start = 0; int hold = 0;
+  res.play_status.success = motion_ctrl_->getPlayStatus(start, hold, res.play_status.err_no);
+  res.play_status.s_start = 0 < start;
+  res.play_status.s_hold = 0 < hold;
   int powerOn = -1;
   int errorNumber = -1;
   bool success = motion_ctrl_->getServoPower(powerOn, errorNumber);
   res.power_on = powerOn > 0;
 
-  res.operation_mode.success = motion_ctrl_->getMode(res.operation_mode.s_mode, res.operation_mode.s_remote, res.operation_mode.err_no);
+  int remote = 0;
+  res.operation_mode.success = motion_ctrl_->getMode(res.operation_mode.s_mode, remote, res.operation_mode.err_no);
+  res.operation_mode.s_remote = 0 < remote;
 
   int taskNumber = 0;
   int jobLine = -1;
@@ -331,9 +336,9 @@ bool MotomanRosServices::holdCB(motoman_msgs::Hold::Request &req,
                                 motoman_msgs::Hold::Response &res)
 {
 
-  bool on_hold = req.hold > 0;
+  bool s_hold = req.hold > 0;
   int errorNumber = -1;
-  motion_ctrl_->setHold(on_hold, errorNumber);
+  motion_ctrl_->setHold(s_hold, errorNumber);
   res.message = printErrorCode(errorNumber);
   res.success = ERROR_CODE::normalEnd == errorNumber;
   return true;
@@ -342,7 +347,10 @@ bool MotomanRosServices::holdCB(motoman_msgs::Hold::Request &req,
 bool MotomanRosServices::getPlayStatusCB(motoman_msgs::GetPlayStatus::Request &req,
                                          motoman_msgs::GetPlayStatus::Response &res)
 {
-  res.success = motion_ctrl_->getPlayStatus(res.on_play, res.on_hold, res.err_no);
+  int hold = 0; int start = 0;
+  res.success = motion_ctrl_->getPlayStatus(start, hold, res.err_no);
+  res.s_start = 0 < start;
+  res.s_hold = 0 < hold;
 
   return res.success;
 }
@@ -350,7 +358,9 @@ bool MotomanRosServices::getPlayStatusCB(motoman_msgs::GetPlayStatus::Request &r
 bool MotomanRosServices::getModeCB(motoman_msgs::GetMode::Request &req,
                                    motoman_msgs::GetMode::Response &res)
 {
-  res.success = motion_ctrl_->getMode(res.s_mode, res.s_remote, res.err_no);
+  int remote = 0;
+  res.success = motion_ctrl_->getMode(res.s_mode, remote, res.err_no);
+  res.s_remote = 0 < remote;
 
   return res.success;
 }
