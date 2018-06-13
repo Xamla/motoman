@@ -87,23 +87,23 @@ void JobActionServer::doWork()
     }
 
     bool success = false;
-    int onHold = -1;
-    int onPlay = -1;
-    success = motion_ctrl_.getPlayStatus(onPlay, onHold, error_number);
+    int s_hold = -1;
+    int s_start = -1;
+    success = motion_ctrl_.getPlayStatus(s_start, s_hold, error_number);
 
     publishFeedback();
 
-    if (onHold > 0)
+    if (s_hold > 0)
     {
-        ROS_INFO("Job is Paused");
-        this->job_exe_state = JOB_EXECUTION_STATE::ONHOLD;
-        this->cur_job_state.is_onhold = true;
-        return;
+      ROS_INFO("Job is Paused");
+      this->job_exe_state = JOB_EXECUTION_STATE::ONHOLD;
+      this->cur_job_state.is_onhold = true;
+      return;
     }
-    else if(this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD && onPlay > 0)
+    else if (this->job_exe_state == JOB_EXECUTION_STATE::ONHOLD && s_start > 0)
     {
-        ROS_INFO("Job is Restarting");
-        this->job_exe_state = JOB_EXECUTION_STATE::RESTARTING;
+      ROS_INFO("Job is Restarting");
+      this->job_exe_state = JOB_EXECUTION_STATE::RESTARTING;
     }
 
     int exp_time = 0;
@@ -178,17 +178,21 @@ void JobActionServer::doWork()
 
 void JobActionServer::start()
 {
-  this->action_server =
-      new ActionServer(this->node_, this->base_name, boost::bind(&JobActionServer::goalCallback, this, _1),
-                       boost::bind(&JobActionServer::cancelCallback, this, _1), false);
-  this->action_server->start();
-  this->action_server_started = true;
+  if (this->action_server_started == false)
+  {
+    this->action_server =
+        new ActionServer(this->node_, this->base_name, boost::bind(&JobActionServer::goalCallback, this, _1),
+                         boost::bind(&JobActionServer::cancelCallback, this, _1), false);
+    this->action_server->start();
+    this->action_server_started = true;
+  }
 }
 
 void JobActionServer::shutdown()
 {
   if (this->action_server_started == true)
   {
+
     delete this->action_server;
     this->action_server = nullptr;
   }

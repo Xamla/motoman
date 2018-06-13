@@ -1797,6 +1797,12 @@ bool MotomanMotionCtrl::sendAndReceiveRpc(SimpleRpc *data, SimpleRpcReply *reply
   SimpleMessage req, res;
   ctrl_msg.toRequest(req);
   boost::mutex::scoped_lock lock(this->mutex_);
+  if (!this->connection_->isConnected())
+  {
+    ROS_ERROR("Failed. Connection lost");
+    return false;
+  }
+
   if (!this->connection_->sendAndReceiveMsg(req, res))
   {
     ROS_ERROR("Failed to send message");

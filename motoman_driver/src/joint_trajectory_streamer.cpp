@@ -134,6 +134,7 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
 
 MotomanJointTrajectoryStreamer::~MotomanJointTrajectoryStreamer()
 {
+  job_action_->shutdown();
   //TODO Find better place to call StopTrajMode
   motion_ctrl_.setTrajMode(false); // release TrajMode, so INFORM jobs can run
 }
