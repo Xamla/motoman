@@ -625,7 +625,7 @@ local function handleSetServoPower(request, response, header)
     print("SetServoPower", tostring(request))
     response.success = true
     response.message = 'ok'
-    robot_state.servo_power_on = response.power_on
+    robot_state.servo_power_on = request.power_on
     return true
 end
 
@@ -698,6 +698,21 @@ local function handleGetControllerReady(request, response, header)
     return true
 end
 
+--- motoman_msgs/Hold
+--[[
+    int16 hold # 1 Hold ON, 0 Hold OFF
+    ---
+    bool success
+    string message # informational, e.g. for error messages
+]]
+local function handleHold(request, response, header)
+    print("Hold", tostring(request))
+    response.success = true
+    robot_state.play_state.s_hold = request.hold > 0
+    response.message = robot_state.play_state.s_hold and 'Hold ON' or 'Hold OFF'
+    return true
+end
+
 
 local function advertiseSerices()
     services.robot_enable     = { type = 'std_srvs/Trigger', handler = handleRobotEnable }
@@ -725,6 +740,7 @@ local function advertiseSerices()
     services.get_mode         = { type = 'motoman_msgs/GetMode', handler = handleGetMode }
     services.set_servo_power  = { type = 'motoman_msgs/SetServoPower', handler = handleSetServoPower }
     services.get_servo_power  = { type = 'motoman_msgs/GetServoPower', handler = handleGetServoPower }
+    services.hold             = { type = 'motoman_msgs/Hold', handler = handleHold }
     services.get_status           = { type = 'motoman_msgs/GetStatus', handler = handleGetStatus }
     services.get_controller_ready = { type = 'motoman_msgs/GetControllerReady', handler = handleGetControllerReady }
 
