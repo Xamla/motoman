@@ -578,15 +578,15 @@ end
     bool success
     string message  # informational, e.g. for error messages
     int32 err_no    # 0 Normal end, -1 Error
-    int32 on_hold   # 1 Hold ON, 0 Hold OFF
-    int32 on_play   # 1 Start ON, 0 Start OFF
+    bool s_hold     # 1 Hold ON, 0 Hold OFF
+    bool s_start     # 1 Start ON, 0 Start OFF
 ]]
 local function handleGetPlayStatus(request, response, header)
     print("GetPlayStatus", tostring(request))
     response.success = true
     response.message = 'ok'
-    response.on_hold = robot_state.play_state.on_hold
-    response.on_play = robot_state.play_state.on_play
+    response.s_hold = robot_state.play_state.s_hold
+    response.s_start = robot_state.play_state.s_start
     return true
 end
 
