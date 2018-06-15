@@ -1,3 +1,4 @@
+#!/usr/bin/env th
 local ros = require 'ros'
 local xamlamoveit = require 'xamlamoveit'
 local grippers = xamlamoveit.grippers

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <launch>
-<group ns="WsgMotomanClient">
-  <rosparam command="load" file="./config.yaml" />
-</group>
-
+  <node name="WsgMotomanClient" pkg="motoman_driver" type="wsgClient.lua" output="screen">
+    <rosparam command="load" file="$(find motoman_driver)/lua/motoman_gripper_relay/config.yaml" />>
+  </node>
 </launch>
