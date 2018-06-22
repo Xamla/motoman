@@ -51,8 +51,6 @@ namespace industrial
 namespace joint_feedback_ex
 {
 
-const int MOT_MAX_GR = 4;
-
 JointFeedbackEx::JointFeedbackEx(void)
 {
   this->init();
@@ -86,7 +84,6 @@ bool JointFeedbackEx::operator==(JointFeedbackEx &rhs)
 
 bool JointFeedbackEx::load(industrial::byte_array::ByteArray *buffer)
 {
-  ROS_ERROR("JointFeedbackEx::load");
   LOG_COMM("Executing joint feedback load");
 
 
@@ -112,7 +109,6 @@ bool JointFeedbackEx::load(industrial::byte_array::ByteArray *buffer)
 
 bool JointFeedbackEx::unload(industrial::byte_array::ByteArray *buffer)
 {
-  
   LOG_COMM("Executing joint feedback unload");
 
   if (!buffer->unloadFront(this->groups_number_))
@@ -121,8 +117,16 @@ bool JointFeedbackEx::unload(industrial::byte_array::ByteArray *buffer)
     return false;
   }
 
-  // AKo: Fix for robot configurations with <4 groups
-  for (int i = MOT_MAX_GR-1; i >= 0; --i)
+  // deserialise all JointFeedback submsgs contained in the buffer, going from
+  // back to front (ie: start with the last and end with the first). But only
+  // retain deserialised msgs that actually contain valid data.
+  //
+  // Note: we cannot assume that there is a 1-to-1 mapping between the order of
+  // JointFeedback msgs in the buffer and motion groups on the controller.
+  // Because of that we have to deserialise all submsgs and check validity
+  // of each individually (ie: we cannot skip submsgs 3 & 4 if there are only
+  // two motion groups, as the data for grp1 could be in submsg 3 fi).
+  for (std::size_t i = 0; i < MAX_NUM_GROUPS; ++i)
   {
     JointFeedbackMessage tmp_msg;
     JointFeedback j_feedback;
@@ -133,13 +137,21 @@ bool JointFeedbackEx::unload(industrial::byte_array::ByteArray *buffer)
       return false;
     }
 
-    tmp_msg.init(j_feedback);
-    if (i < this->groups_number_)
+    // every msg gets deserialised, but we only keep those with valid data.
+    //
+    // TODO: is a message with just 'TIME' also valid? For now it is not (not
+    // sure how that would work anyway, as Jointfeedback msgs are assumed to
+    // contain joint feedback. Time alone would not seem to fit in that
+    // category).
+    if (j_feedback.is_valid(joint_feedback::ValidFieldTypes::POSITION)
+     || j_feedback.is_valid(joint_feedback::ValidFieldTypes::VELOCITY)
+     || j_feedback.is_valid(joint_feedback::ValidFieldTypes::ACCELERATION))
     {
+      tmp_msg.init(j_feedback);
       this->joint_feedback_messages_.push_back(tmp_msg);
     }
   }
-  
+
   LOG_COMM("Joint feedback successfully unloaded");
   return true;
 }
