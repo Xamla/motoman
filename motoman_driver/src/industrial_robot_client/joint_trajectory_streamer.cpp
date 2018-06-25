@@ -337,7 +337,7 @@ void JointTrajectoryStreamer::streamingThread()
         break;
       }
 
-      if (!this->connection_->isConnected())
+      if (!this->motion_ctrl_.isConnected())
       {
         ROS_DEBUG("Robot disconnected.  Attempting reconnect...");
         connectRetryCount = 5;
@@ -349,7 +349,7 @@ void JointTrajectoryStreamer::streamingThread()
                ReplyTypes::INVALID, tmpMsg.getData());  // set commType=REQUEST
 
       ROS_INFO("Sending joint trajectory point");
-      if (this->connection_->sendAndReceiveMsg(msg, reply, false))
+      if (this->motion_ctrl_.sendServoPoint(msg, reply))
       {
         ROS_INFO("Point[%d of %d] sent to controller",
                  this->current_point_, static_cast<int>(this->current_traj_.size()));
@@ -372,7 +372,7 @@ void JointTrajectoryStreamer::streamingThread()
         }
 
         //if not connected, reconnect.
-        if (!this->connection_->isConnected())
+        if (!this->this->motion_ctrl_.isConnected())
         {
           ROS_DEBUG("Robot disconnected.  Attempting reconnect...");
           connectRetryCount = 5;
@@ -386,7 +386,7 @@ void JointTrajectoryStreamer::streamingThread()
                  ReplyTypes::INVALID, tmpMsg.getData());  // set commType=REQUEST
 
         ROS_DEBUG("Sending joint trajectory point");
-        if (this->connection_->sendAndReceiveMsg(msg, reply, false))
+        if (this->motion_ctrl_.sendServoPoint(msg, reply))
         {
           ROS_INFO("Point[%d] sent to controller", this->current_point_);
           this->current_point_++;

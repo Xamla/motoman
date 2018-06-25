@@ -494,7 +494,8 @@ void MotomanJointTrajectoryStreamer::setStreamingMode(bool enable)
      ROS_ERROR("Querying max_acceleration param failed.");
    }
 */
-  this->motion_ctrl_.setStreamMode(enable);
+  if (!this->motion_ctrl_.setStreamMode(enable))
+      ROS_ERROR( "Failed to streaming mode");
 }
 
 // override streamingThread, to provide check/retry of MotionReply.result=BUSY
@@ -576,7 +577,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
           break;
         }
 
-        if (!this->connection_->isConnected())
+        if (!this->motion_ctrl_.isConnected())
         {
           ROS_DEBUG("Robot disconnected.  Attempting reconnect...");
           connectRetryCount = 5;
@@ -587,8 +588,8 @@ void MotomanJointTrajectoryStreamer::streamingThread()
         msg.init(tmpMsg.getMessageType(), CommTypes::SERVICE_REQUEST,
                  ReplyTypes::INVALID, tmpMsg.getData()); // set commType=REQUEST
 
-        if (!this->connection_->sendAndReceiveMsg(msg, reply, false))
-          ROS_WARN("Failed sent joint point, will try again");
+        if (!this->motion_ctrl_.sendServoPoint(msg, reply))
+          ROS_WARN("[TransferStates::STREAMINGA] Failed sent joint point, will try again");
         else
         {
           MotionReplyMessage reply_status;
@@ -640,7 +641,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
           }
         }
         //if not connected, reconnect.
-        if (!this->connection_->isConnected())
+        if (!this->motion_ctrl_.isConnected())
         {
           ROS_DEBUG("Robot disconnected.  Attempting reconnect...");
           connectRetryCount = 5;
@@ -652,7 +653,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
                  ReplyTypes::INVALID, tmpMsg.getData()); // set commType=REQUEST
 
         ROS_INFO("Sending joint trajectory point");
-        if (this->connection_->sendAndReceiveMsg(msg, reply, false))
+        if (this->motion_ctrl_.sendServoPoint(msg, reply))
         {
           MotionReplyMessage reply_status;
           if (!reply_status.init(reply))

@@ -85,7 +85,7 @@ namespace motion_ctrl
 {
 
 boost::mutex MotomanMotionCtrl::mutex_;
-boost::mutex MotomanMotionCtrl::skill_que_mutex_;
+boost::mutex MotomanMotionCtrl::upper_mutex_;
 
 static inline uint16_t Swap16(uint16_t value)
 {
@@ -326,7 +326,6 @@ void bswap(MP_JOB_NAME_SEND_DATA &value)
 {
 }
 
-
 bool MotomanMotionCtrl::init(SmplMsgConnection *connection, int robot_id)
 {
   connection_ = connection;
@@ -337,6 +336,7 @@ bool MotomanMotionCtrl::init(SmplMsgConnection *connection, int robot_id)
 
 bool MotomanMotionCtrl::controllerReady()
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   std::string err_str;
   MotionReply reply;
 
@@ -351,6 +351,7 @@ bool MotomanMotionCtrl::controllerReady()
 
 bool MotomanMotionCtrl::setTrajMode(bool enable)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   MotionReply reply;
   MotionControlCmd cmd = enable ? MotionControlCmds::START_TRAJ_MODE : MotionControlCmds::STOP_TRAJ_MODE;
 
@@ -371,6 +372,7 @@ bool MotomanMotionCtrl::setTrajMode(bool enable)
 
 bool MotomanMotionCtrl::getMaxAcc(int groupNo, float *max_acc)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   MotionReply reply;
   MotionControlCmd cmd = MotionControlCmds::GET_MAX_ACC;
 
@@ -396,6 +398,7 @@ bool MotomanMotionCtrl::getMaxAcc(int groupNo, float *max_acc)
 
 bool MotomanMotionCtrl::setMaxAcc(int groupNo, float *max_acc)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   MotionReply reply;
 
   SimpleMessage req, res;
@@ -432,6 +435,7 @@ bool MotomanMotionCtrl::setMaxAcc(int groupNo, float *max_acc)
 
 bool MotomanMotionCtrl::setStreamMode(bool enable)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   ROS_ERROR("setStreamMode: %s", enable ? "true" : "false");
 
   MotionReply reply;
@@ -454,6 +458,7 @@ bool MotomanMotionCtrl::setStreamMode(bool enable)
 
 bool MotomanMotionCtrl::stopTrajectory()
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   MotionReply reply;
 
   if (!sendAndReceive(MotionControlCmds::STOP_MOTION, reply))
@@ -498,6 +503,7 @@ bool MotomanMotionCtrl::sendAndReceive(MotionControlCmd command, MotionReply &re
 
 bool MotomanMotionCtrl::startJob(int taskNumber, std::string jobName, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -567,6 +573,7 @@ bool MotomanMotionCtrl::startJob(int taskNumber, std::string jobName, int &error
 
 bool MotomanMotionCtrl::deleteJob(std::string jobName, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -619,6 +626,7 @@ bool MotomanMotionCtrl::deleteJob(std::string jobName, int &errorNumber)
 
 bool MotomanMotionCtrl::waitForJobEnd(int taskNumber, int time, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -672,6 +680,7 @@ bool MotomanMotionCtrl::waitForJobEnd(int taskNumber, int time, int &errorNumber
 
 bool MotomanMotionCtrl::setHold(int hold, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -724,6 +733,7 @@ bool MotomanMotionCtrl::setHold(int hold, int &errorNumber)
 
 bool MotomanMotionCtrl::getMode(int &sMode, int &sRemote, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -765,6 +775,7 @@ bool MotomanMotionCtrl::getMode(int &sMode, int &sRemote, int &errorNumber)
 
 bool MotomanMotionCtrl::getPlayStatus(int &sStart, int &sHold, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -805,6 +816,7 @@ bool MotomanMotionCtrl::getPlayStatus(int &sStart, int &sHold, int &errorNumber)
 
 bool MotomanMotionCtrl::getJobDate(const std::string jobName, int &year, int &month, int &day, int &hour, int &min, int &sec, int &lElapsedTime, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -866,6 +878,7 @@ bool MotomanMotionCtrl::getJobDate(const std::string jobName, int &year, int &mo
 
 bool MotomanMotionCtrl::getMasterJob(int taskNumber, std::string &jobName)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -921,6 +934,7 @@ bool MotomanMotionCtrl::getMasterJob(int taskNumber, std::string &jobName)
 
 bool MotomanMotionCtrl::getCurJob(int taskNumber, int &jobLine, int &step, std::string &jobName)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -978,6 +992,7 @@ bool MotomanMotionCtrl::getCurJob(int taskNumber, int &jobLine, int &step, std::
 
 bool MotomanMotionCtrl::setCurJob(int jobLine, const std::string &jobName, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1034,6 +1049,7 @@ bool MotomanMotionCtrl::setCurJob(int jobLine, const std::string &jobName, int &
 
 bool MotomanMotionCtrl::getServoPower(int &servoPower, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1073,6 +1089,7 @@ bool MotomanMotionCtrl::getServoPower(int &servoPower, int &errorNumber)
 
 bool MotomanMotionCtrl::setServoPower(const int servoPower, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1122,6 +1139,7 @@ bool MotomanMotionCtrl::setServoPower(const int servoPower, int &errorNumber)
 
 bool MotomanMotionCtrl::setMasterJob(int taskNumber, const std::string &jobName, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1184,6 +1202,7 @@ bool MotomanMotionCtrl::setMasterJob(int taskNumber, const std::string &jobName,
 
 bool MotomanMotionCtrl::cancelError(int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1223,6 +1242,7 @@ bool MotomanMotionCtrl::cancelError(int &errorNumber)
 
 bool MotomanMotionCtrl::resetAlarm(int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1262,6 +1282,7 @@ bool MotomanMotionCtrl::resetAlarm(int &errorNumber)
 
 bool MotomanMotionCtrl::setAlarm(const std::string &alarm_message, const short alarm_code, const uint8_t sub_code, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1314,6 +1335,7 @@ bool MotomanMotionCtrl::setAlarm(const std::string &alarm_message, const short a
 
 bool MotomanMotionCtrl::removeFile(const std::string fileName, int &errorNumber)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1347,7 +1369,7 @@ bool MotomanMotionCtrl::removeFile(const std::string fileName, int &errorNumber)
 
 bool MotomanMotionCtrl::readFileChunk(int offset, int length, const std::string &fileName, char *resultBuffer, int &errorNumber)
 {
-  ROS_DEBUG("offset: %d, length %d, fileName %s", offset, length, fileName.c_str());
+  ROS_INFO("offset: %d, length %d, fileName %s", offset, length, fileName.c_str());
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, no arguments
@@ -1372,7 +1394,7 @@ bool MotomanMotionCtrl::readFileChunk(int offset, int length, const std::string 
 
   data.setArgumentsSize(tmp_vector.size());
   data.setArgumentsData(tmp_vector);
-
+  ROS_INFO("before sendAndReceiveRpc");
   if (!this->sendAndReceiveRpc(&data, &reply))
   {
     ROS_ERROR("failed to send readFileChunk command");
@@ -1415,70 +1437,75 @@ bool MotomanMotionCtrl::listJobs(std::vector<std::string> &result)
   int fileSize = -1;
   int errorNumber = -1;
   std::string fileName;
-  if (!requestListJobs(jobCount, fileSize, fileName, errorNumber))
   {
-    ROS_ERROR("[listJobs] failed to send requestListJobs command");
-    return false;
-  }
+    boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
 
-  ROS_INFO("jobCount: %d, fileSize %d, fileName %s", jobCount, fileSize, fileName.c_str());
-  size_t chunk_size = 900;
-  size_t total_chunks = fileSize / chunk_size;
-  size_t last_chunk_size = fileSize % chunk_size;
-  std::vector<char> fileData(fileSize);
-  if (last_chunk_size != 0)
-  {
-    ++total_chunks;
-  }
-  else
-  {
-    last_chunk_size = chunk_size;
-  }
-
-  for (size_t chunk = 0; chunk < total_chunks; ++chunk)
-  {
-    size_t this_chunk_size =
-        chunk == total_chunks - 1 /* if last chunk */
-            ? last_chunk_size     /* then fill chunk with remaining bytes */
-            : chunk_size;         /* else fill entire chunk */
-
-    int offset = chunk * chunk_size;
-    if (!readFileChunk(offset, this_chunk_size, fileName, fileData.data(), errorNumber))
+    if (!requestListJobs(jobCount, fileSize, fileName, errorNumber))
     {
-      ROS_ERROR("[listJobs] failed to send readFileChunk command");
+      ROS_ERROR("[listJobs] failed to send requestListJobs command");
       return false;
     }
-  }
 
-  if (errorNumber != 0)
-  {
-
-    switch (errorNumber)
+    ROS_INFO("jobCount: %d, fileSize %d, fileName %s", jobCount, fileSize, fileName.c_str());
+    size_t chunk_size = 900;
+    size_t total_chunks = fileSize / chunk_size;
+    size_t last_chunk_size = fileSize % chunk_size;
+    std::vector<char> fileData(fileSize);
+    if (last_chunk_size != 0)
     {
-    case 1:
-      ROS_ERROR("[listJobs] mpOpen Failed");
-      break;
-    case 2:
-      ROS_ERROR("[listJobs] mpLSeek failed");
-      break;
-    case 3:
-      ROS_ERROR("[listJobs] mpRead Failed");
-      break;
-    default:
-      ROS_ERROR("[listJobs] unknown error");
-      break;
+      ++total_chunks;
     }
-    return false;
-  }
+    else
+    {
+      last_chunk_size = chunk_size;
+    }
 
-  const int funtion_name_size = 33;
-  const int count = fileData.size() / funtion_name_size;
-  const char *result_data = fileData.data();
+    for (size_t chunk = 0; chunk < total_chunks; ++chunk)
+    {
+      size_t this_chunk_size =
+          chunk == total_chunks - 1 /* if last chunk */
+              ? last_chunk_size     /* then fill chunk with remaining bytes */
+              : chunk_size;         /* else fill entire chunk */
 
-  for (size_t i = 0; i < count; i++)
-  {
-    result.push_back(result_data);
-    result_data += funtion_name_size;
+      int offset = chunk * chunk_size;
+      ROS_INFO("READ file CHUNK");
+      if (!readFileChunk(offset, this_chunk_size, fileName, fileData.data(), errorNumber))
+      {
+        ROS_ERROR("[listJobs] failed to send readFileChunk command");
+        return false;
+      }
+    }
+
+    if (errorNumber != 0)
+    {
+
+      switch (errorNumber)
+      {
+      case 1:
+        ROS_ERROR("[listJobs] mpOpen Failed");
+        break;
+      case 2:
+        ROS_ERROR("[listJobs] mpLSeek failed");
+        break;
+      case 3:
+        ROS_ERROR("[listJobs] mpRead Failed");
+        break;
+      default:
+        ROS_ERROR("[listJobs] unknown error");
+        break;
+      }
+      return false;
+    }
+
+    const int funtion_name_size = 33;
+    const int count = fileData.size() / funtion_name_size;
+    const char *result_data = fileData.data();
+
+    for (size_t i = 0; i < count; i++)
+    {
+      result.push_back(result_data);
+      result_data += funtion_name_size;
+    }
   }
   if (!removeFile(fileName, errorNumber))
   {
@@ -1532,6 +1559,7 @@ bool MotomanMotionCtrl::requestListJobs(int &jobCount, int &fileSize, std::strin
 
 bool MotomanMotionCtrl::endSkill(int robotNo)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   if (robotNo > 1)
   {
     ROS_ERROR("Robot no can only be 0, 1 but has value %d", robotNo);
@@ -1572,6 +1600,7 @@ bool MotomanMotionCtrl::endSkill(int robotNo)
 
 bool MotomanMotionCtrl::readSkill(std::vector<int> &skillPending, std::vector<std::string> &cmds)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, argumentssize
@@ -1617,6 +1646,7 @@ bool MotomanMotionCtrl::readSkill(std::vector<int> &skillPending, std::vector<st
 
 bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &req, motoman_msgs::GetUserVars::Response &res)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, argumentssize
@@ -1669,10 +1699,10 @@ bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &re
 
     if (buffer.size() < sizeof(MP_USR_VAR_INFO))
     {
-        res.success = false;
-        res.message = "buffer size does not add up";
-        ROS_ERROR("%s", res.message.c_str());
-        return false;
+      res.success = false;
+      res.message = "buffer size does not add up";
+      ROS_ERROR("%s", res.message.c_str());
+      return false;
     }
     motoman_msgs::UserVarPrimitive resPrim;
     resPrim.var_type = result_data->var_type;
@@ -1711,6 +1741,7 @@ bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &re
 
 bool MotomanMotionCtrl::putUserVars(const motoman_msgs::PutUserVars::Request &req, motoman_msgs::PutUserVars::Response &res)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   SimpleRpc data;
   SimpleRpcReply reply;
   data.init(call_id_, 0); //callid, argumentssize
@@ -1791,12 +1822,12 @@ bool MotomanMotionCtrl::putUserVars(const motoman_msgs::PutUserVars::Request &re
 
 bool MotomanMotionCtrl::sendAndReceiveRpc(SimpleRpc *data, SimpleRpcReply *reply)
 {
+  boost::mutex::scoped_lock lock(this->mutex_);
   SimpleRpcMessage ctrl_msg;
   SimpleRpcReplyMessage ctrl_reply;
   ctrl_msg.init(*data);
   SimpleMessage req, res;
   ctrl_msg.toRequest(req);
-  boost::mutex::scoped_lock lock(this->mutex_);
   if (!this->connection_->isConnected())
   {
     ROS_ERROR("Failed. Connection lost");
@@ -1815,12 +1846,12 @@ bool MotomanMotionCtrl::sendAndReceiveRpc(SimpleRpc *data, SimpleRpcReply *reply
     return false;
   }
   reply->copyFrom(ctrl_reply.reply_);
-
   return true;
 }
 
 bool MotomanMotionCtrl::writeToIO(int address, int value, std::string &errorMessage)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   WriteSingleIO data;
   WriteSingleIOReply reply;
   WriteSingleIOMessage ctrl_msg;
@@ -1850,6 +1881,31 @@ bool MotomanMotionCtrl::writeToIO(int address, int value, std::string &errorMess
   return true;
 }
 
+bool MotomanMotionCtrl::isConnected()
+{
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
+  boost::mutex::scoped_lock lock(this->mutex_);
+  if (!this->connection_->isConnected())
+  {
+    ROS_ERROR("Failed. Connection lost");
+    return false;
+  }
+  return true;
+}
+
+bool MotomanMotionCtrl::sendServoPoint(SimpleMessage req, SimpleMessage &resp)
+{
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
+  boost::mutex::scoped_lock lock(this->mutex_);
+  if (!this->connection_->sendAndReceiveMsg(req, resp, false))
+  {
+    std::string errorMessage = "Failed to send message";
+    ROS_ERROR("[readFromIO] %s", errorMessage.c_str());
+    return false;
+  }
+  return true;
+}
+
 std::string MotomanMotionCtrl::getErrorString(const WriteSingleIOReply &reply)
 {
   std::ostringstream ss;
@@ -1859,6 +1915,7 @@ std::string MotomanMotionCtrl::getErrorString(const WriteSingleIOReply &reply)
 
 bool MotomanMotionCtrl::readFromIO(int address, int *value, std::string &errorMessage)
 {
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
   ReadSingleIO data;
   ReadSingleIOReply reply;
   ReadSingleIOMessage ctrl_msg;

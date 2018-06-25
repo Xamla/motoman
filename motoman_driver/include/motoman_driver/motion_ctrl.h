@@ -34,6 +34,7 @@
 
 #include <boost/thread/thread.hpp>
 #include "simple_message/smpl_msg_connection.h"
+#include "simple_message/simple_message.h"
 #include "motoman_driver/simple_message/motoman_motion_ctrl.h"
 #include "motoman_driver/simple_message/motoman_motion_reply.h"
 #include "motoman_driver/simple_message/motoman_read_single_io_reply.h"
@@ -51,6 +52,7 @@ namespace motoman
 {
 namespace motion_ctrl
 {
+using industrial::simple_message::SimpleMessage;
 using industrial::smpl_msg_connection::SmplMsgConnection;
 using motoman::simple_message::motion_reply::MotionReply;
 typedef motoman::simple_message::motion_ctrl::MotionControlCmd MotionControlCmd;
@@ -314,7 +316,7 @@ typedef struct _MP_SYS_TIME_RSP_DATA MP_SYS_TIME_RSP_DATA;
 class MotomanMotionCtrl
 {
   static boost::mutex mutex_;
-  static boost::mutex skill_que_mutex_;
+  static boost::mutex upper_mutex_;
 
 public:
   /**
@@ -368,7 +370,8 @@ public:
   bool readSkill(std::vector<int> &skillPending, std::vector<std::string> &cmds);
 
   bool setAlarm(const std::string &alarm_message, const short alarm_code, const uint8_t sub_code, int &errorNumber);
-
+  bool isConnected();
+  bool sendServoPoint(SimpleMessage req, SimpleMessage &resp);
 protected:
   SmplMsgConnection *connection_;
   int robot_id_;
