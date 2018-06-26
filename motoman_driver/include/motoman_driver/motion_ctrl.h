@@ -370,6 +370,7 @@ public:
   bool readSkill(std::vector<int> &skillPending, std::vector<std::string> &cmds);
 
   bool setAlarm(const std::string &alarm_message, const short alarm_code, const uint8_t sub_code, int &errorNumber);
+  bool makeConnect();
   bool isConnected();
   bool sendServoPoint(SimpleMessage req, SimpleMessage &resp);
 protected:

@@ -512,10 +512,10 @@ void MotomanJointTrajectoryStreamer::streamingThread()
     if (connectRetryCount-- > 0)
     {
       ROS_INFO("Connecting to robot motion server");
-      this->connection_->makeConnect();
+      this->motion_ctrl_.makeConnect();
       ros::Duration(0.250).sleep(); // wait for connection
 
-      if (this->connection_->isConnected())
+      if (this->motion_ctrl_.isConnected())
         connectRetryCount = 0;
       else if (connectRetryCount <= 0)
       {

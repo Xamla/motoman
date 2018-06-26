@@ -1893,6 +1893,18 @@ bool MotomanMotionCtrl::isConnected()
   return true;
 }
 
+bool MotomanMotionCtrl::makeConnect()
+{
+  boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
+  boost::mutex::scoped_lock lock(this->mutex_);
+  if (!this->connection_->makeConnect())
+  {
+    ROS_ERROR("Failed. Could not establish connection.");
+    return false;
+  }
+  return true;
+}
+
 bool MotomanMotionCtrl::sendServoPoint(SimpleMessage req, SimpleMessage &resp)
 {
   boost::mutex::scoped_lock upper_lock(this->upper_mutex_);
