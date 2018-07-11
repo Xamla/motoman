@@ -241,16 +241,24 @@ void JointTrajectoryStreamer::jointCommandCB(
 
 bool JointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessage>& messages)
 {
+  boost::mutex::scoped_lock lock(this->mutex_);
+  int state = this->state_;
   ROS_INFO("Loading trajectory, setting state to streaming");
-  this->mutex_.lock();
+  if (TransferStates::IDLE == state || TransferStates::POINT_STREAMING == state)
   {
+    ROS_WARN_COND(TransferStates::POINT_STREAMING == state, "Trajectory execution request received. Abort POINT_STREAMING_MODE");
     ROS_INFO("Executing trajectory of size: %d", static_cast<int>(messages.size()));
     this->current_traj_ = messages;
     this->current_point_ = 0;
     this->state_ = TransferStates::STREAMING;
+    this->setStreamingMode(false);
     this->streaming_start_ = ros::Time::now();
   }
-  this->mutex_.unlock();
+  else
+  {
+    ROS_ERROR_STREAM("TransferState is not IDLE and not in POINT_STREAMING state.");
+    return false;
+  }
 
   return true;
 }

@@ -350,7 +350,7 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh, int
         abortGoal(group_number);
       }
       // Sends the trajectory along to the controller
-      if (withinGoalConstraints(last_trajectory_state_map_[group_number],
+      if (gh.getGoal()->trajectory.points.size() < 2 && withinGoalConstraints(last_trajectory_state_map_[group_number],
                                 gh.getGoal()->trajectory, group_number))
       {
         ROS_INFO_STREAM("Already within goal constraints, setting goal succeeded");
@@ -509,7 +509,7 @@ void JointTrajectoryAction::controllerStateCB(
     this->last_position = last_trajectory_state_map_[robot_id]->actual.positions;
   }
 
-  if (withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
+  if (ros::Duration((ros::Time::now() - this->start_trajectory_execution).toSec()) > (current_traj_map_[robot_id].points[last_point].time_from_start) && withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
   {
       if (this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, this->last_position) < 1e-3)
       {
