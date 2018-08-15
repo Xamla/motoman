@@ -341,11 +341,6 @@ bool MotomanJointTrajectoryStreamer::create_message_ex(int seq, const motoman_ms
     {
       if (VectorToJointData(pt.positions, values))
       {
-        ROS_INFO("Target Joint Positions");
-        for (int i = 0; i < pt.positions.size(); i++)
-        {
-          ROS_INFO("%f", pt.positions[i]);
-        }
         msg_data.setPositions(values);
       }
       else

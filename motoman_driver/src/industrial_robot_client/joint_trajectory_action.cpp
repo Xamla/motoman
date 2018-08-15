@@ -329,9 +329,19 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
 void JointTrajectoryAction::cancelCB(JointTractoryActionServer::GoalHandle gh)
 {
   // The interface is provided, but it is recommended to use
-  //  void JointTrajectoryAction::cancelCB(JointTractoryActionServer::GoalHandle & gh, int group_number)
+  ROS_INFO("Received action cancel request for full body motion");
+  if (gh == this->active_goal_)
+  {
+    motoman_msgs::DynamicJointTrajectory empty;
+    this->has_active_goal_ = false;
+    this->active_goal_.setCanceled();
+    this->pub_trajectory_command_.publish(empty);
+  }
+  else
+  {
+    ROS_WARN("Full body active goal and goal to cancel do not match, ignoring cancel request");
+  }
 
-  ROS_DEBUG("Received action cancel request");
 }
 
 void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh, int group_number)
