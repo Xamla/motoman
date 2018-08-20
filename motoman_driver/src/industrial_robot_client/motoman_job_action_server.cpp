@@ -86,12 +86,30 @@ void JobActionServer::doWork()
       return;
     }
 
-    bool success = false;
     int s_hold = -1;
     int s_start = -1;
-    success = motion_ctrl_.getPlayStatus(s_start, s_hold, error_number);
+    if (!motion_ctrl_.getPlayStatus(s_start, s_hold, error_number))
+    {
+      reason_for_abort = "could not call getPlayStatus command. Check connection to robot.";
+      this->abort(reason_for_abort, ERROR_CODE::wrongOp);
+    }
 
     publishFeedback();
+
+    int remote = 0;
+    int s_mode = 0;
+    if (motion_ctrl_.getMode(s_mode, remote, error_number))
+    {
+      if (remote == 0)
+      {
+        return;
+      }
+    }
+    else
+    {
+      reason_for_abort = "could not call getMode command. Check connection to robot.";
+      this->abort(reason_for_abort, ERROR_CODE::wrongOp);
+    }
 
     if (s_hold > 0)
     {
@@ -107,9 +125,8 @@ void JobActionServer::doWork()
     }
 
     int exp_time = 0;
-    success = motion_ctrl_.waitForJobEnd(this->cur_job_state.task_no, exp_time, error_number);
 
-    if (success)
+    if (motion_ctrl_.waitForJobEnd(this->cur_job_state.task_no, exp_time, error_number))
     {
       motoman_msgs::StartJobResult result;
       switch (error_number)
