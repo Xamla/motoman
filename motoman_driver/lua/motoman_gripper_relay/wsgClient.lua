@@ -3,6 +3,7 @@ local ros = require 'ros'
 local xamlamoveit = require 'xamlamoveit'
 local grippers = xamlamoveit.grippers
 
+
 local COMMAND_IDS = {
     HOMING = 0,
     GRASP = 1,
@@ -57,7 +58,7 @@ function WsgMotomanClient:__init(node_handle)
     self.gripper_client = {}
     if config.gripper_list then
         for i, v in ipairs(config.gripper_list) do
-            ros.INFO('create id %d, namspace: %s', v.id, v.ns)
+            ros.INFO('create yellow id %d, namspace: %s', v.id, v.ns)
             self.gripper_client[v.id] = grippers.WeissTwoFingerModel(node_handle, v.ns, v.action_ns)
             ros.INFO('connected to %s/%s', v.ns, v.action_ns)
         end
@@ -113,6 +114,7 @@ function WsgMotomanClient:process()
                 self:setAlarm(sf('home gripper [id: %d] failed', gripper_id), 1)
             end
         elseif id == 1 then
+            local retryFlag = 1
             task =
                 self.gripper_client[gripper_id]:grasp(
                 {
@@ -122,7 +124,29 @@ function WsgMotomanClient:process()
                     timeout = 20000
                 }
             )
-            if task:hasCompletedSuccessfully() == false then
+            if task:hasCompletedSuccessfully() == false and retryFlag == 1 then -- if gripping fail, retry
+                task =
+                    self.gripper_client[gripper_id]:move(
+                    {
+                        width = (tonumber(tokens[3]) + 20 ) / 1000,
+                        speed = 10 / 1000,
+                        force = tonumber(tokens[5]),
+                        stop_on_block = tonumber(tokens[6]) ~= 0,
+                        timeout = 20000
+                    }
+                ) 
+                task =
+                    self.gripper_client[gripper_id]:grasp(
+                    {
+                        width = tonumber(tokens[3]) / 1000,
+                        speed = 150 / 1000,
+                        force = tonumber(tokens[5]),
+                        timeout = 20000
+                    }
+                )
+                retryFlag = 0
+            end
+            if task:hasCompletedSuccessfully() == false and retryFlag == 0 then -- if  even retry fails, report error
                 self:setAlarm(sf('grasp gripper [id: %d] failed', gripper_id))
             end
         elseif id == 2 then
