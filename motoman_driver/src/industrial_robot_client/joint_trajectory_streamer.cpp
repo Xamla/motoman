@@ -248,15 +248,11 @@ bool JointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessage>& me
   {
     ROS_WARN_COND(TransferStates::POINT_STREAMING == state, "Trajectory execution request received. Abort POINT_STREAMING_MODE");
     ROS_INFO("Executing trajectory of size: %d", static_cast<int>(messages.size()));
-    this->mutex_.lock();
-    {
-        this->current_traj_ = messages;
-        this->current_point_ = 0;
-        this->state_ = TransferStates::STREAMING;
-        this->setStreamingMode(false);
-        this->streaming_start_ = ros::Time::now();
-    }
-    this->mutex_.unlock();
+    this->current_traj_ = messages;
+    this->current_point_ = 0;
+    this->state_ = TransferStates::STREAMING;
+    this->setStreamingMode(false);
+    this->streaming_start_ = ros::Time::now();
   }
   else
   {
