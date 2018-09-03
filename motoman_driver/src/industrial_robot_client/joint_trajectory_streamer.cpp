@@ -356,10 +356,10 @@ void JointTrajectoryStreamer::streamingThread()
       msg.init(tmpMsg.getMessageType(), CommTypes::SERVICE_REQUEST,
                ReplyTypes::INVALID, tmpMsg.getData());  // set commType=REQUEST
 
-      ROS_INFO("Sending joint trajectory point");
+      ROS_DEBUG("Sending joint trajectory point");
       if (this->connection_->sendAndReceiveMsg(msg, reply, false))
       {
-        ROS_INFO("Point[%d of %d] sent to controller",
+        ROS_DEBUG("Point[%d of %d] sent to controller",
                  this->current_point_, static_cast<int>(this->current_traj_.size()));
         this->current_point_++;
       }
@@ -369,7 +369,7 @@ void JointTrajectoryStreamer::streamingThread()
       break;
    case TransferStates::POINT_STREAMING:
 
-        ROS_ERROR("POINT_STREAMIN in base JointTrajectoryStreamer");   // ##
+        ROS_DEBUG("POINT_STREAMING in base JointTrajectoryStreamer");   // ##
 
         //if no points in queue, streaming complete, set to idle.
         if (this->streaming_queue_.empty())
@@ -382,7 +382,7 @@ void JointTrajectoryStreamer::streamingThread()
         //if not connected, reconnect.
         if (!this->connection_->isConnected())
         {
-          ROS_DEBUG("Robot disconnected.  Attempting reconnect...");
+          ROS_WARN("Robot disconnected.  Attempting reconnect...");
           connectRetryCount = 5;
           break;
         }
@@ -396,7 +396,7 @@ void JointTrajectoryStreamer::streamingThread()
         ROS_DEBUG("Sending joint trajectory point");
         if (this->connection_->sendAndReceiveMsg(msg, reply, false))
         {
-          ROS_INFO("Point[%d] sent to controller", this->current_point_);
+          ROS_DEBUG("Point[%d] sent to controller", this->current_point_);
           this->current_point_++;
         }
         else

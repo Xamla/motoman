@@ -58,7 +58,7 @@ function WsgMotomanClient:__init(node_handle)
     self.gripper_client = {}
     if config.gripper_list then
         for i, v in ipairs(config.gripper_list) do
-            ros.INFO('create yellow id %d, namspace: %s', v.id, v.ns)
+            ros.INFO('create id %d, namspace: %s', v.id, v.ns)
             self.gripper_client[v.id] = grippers.WeissTwoFingerModel(node_handle, v.ns, v.action_ns)
             ros.INFO('connected to %s/%s', v.ns, v.action_ns)
         end
