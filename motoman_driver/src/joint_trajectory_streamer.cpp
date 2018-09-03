@@ -647,7 +647,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
         msg.init(tmpMsg.getMessageType(), CommTypes::SERVICE_REQUEST,
                  ReplyTypes::INVALID, tmpMsg.getData()); // set commType=REQUEST
 
-        ROS_INFO("Sending joint trajectory point");
+        ROS_DEBUG("Sending joint trajectory point");
         if (this->motion_ctrl_.sendServoPoint(msg, reply))
         {
           MotionReplyMessage reply_status;
@@ -660,7 +660,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
           }
           if (reply_status.reply_.getResult() == MotionReplyResults::SUCCESS)
           {
-            ROS_INFO("Point[%d] sent to controller", this->current_point_);
+            ROS_DEBUG("Point[%d] sent to controller", this->current_point_);
             this->current_point_++;
             time_since_last_ = 0.0;
             time_of_last_ = ros::Time::now().toSec();
