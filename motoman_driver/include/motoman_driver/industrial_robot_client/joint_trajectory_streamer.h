@@ -33,6 +33,7 @@
 #define MOTOMAN_DRIVER_INDUSTRIAL_ROBOT_CLIENT_JOINT_TRAJECTORY_STREAMER_H
 
 #include <boost/thread/thread.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include "motoman_driver/industrial_robot_client/joint_trajectory_interface.h"
 #include <map>
 #include <vector>
@@ -131,14 +132,14 @@ protected:
   void trajectoryStop();
 
   boost::thread* streaming_thread_;
-  boost::mutex mutex_;
+  boost::recursive_mutex mutex_;
   int current_point_;
   int streaming_sequence_;
   std::vector<SimpleMessage> current_traj_;
   TransferState state_;
   ros::Time streaming_start_;
   int min_buffer_size_;
-
+  std::queue<std::vector<SimpleMessage>> traj_queue_;
   std::queue<SimpleMessage> streaming_queue_;
   double time_of_last_;
   double time_since_last_;

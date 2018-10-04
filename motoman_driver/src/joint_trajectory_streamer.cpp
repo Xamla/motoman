@@ -457,7 +457,7 @@ bool MotomanJointTrajectoryStreamer::VectorToJointData(const std::vector<double>
 bool MotomanJointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessage> &messages)
 {
   {
-    boost::mutex::scoped_lock lock(this->mutex_);
+    boost::recursive_mutex::scoped_lock lock(this->mutex_);
     if (!motion_ctrl_.controllerReady())
       ROS_ERROR_RETURN(false, "Failed to initialize MotoRos motion, so trajectory ABORTED.\n If safe, call /robot_enable service to (re-)enable Motoplus motion.");
   }
@@ -521,7 +521,7 @@ void MotomanJointTrajectoryStreamer::streamingThread()
     }
 
     {
-      boost::mutex::scoped_lock lock(this->mutex_);
+      boost::recursive_mutex::scoped_lock lock(this->mutex_);
 
       if (job_action_->hasActiveGoal())
       {
@@ -567,9 +567,16 @@ void MotomanJointTrajectoryStreamer::streamingThread()
         //      ROS_INFO("TransferStates::STREAMING");
         if (this->current_point_ >= static_cast<int>(this->current_traj_.size()))
         {
-          ROS_INFO("Trajectory streaming complete, setting state to IDLE");
           this->state_ = TransferStates::IDLE;
-          break;
+          if (this->traj_queue_.empty())
+          {
+            ROS_INFO("Trajectory streaming complete, setting state to IDLE");
+            break;
+          }
+
+          ROS_INFO("Trajectory queue not empty, continuing with next trajectory (current queue size: %d)", static_cast<int>(this->traj_queue_.size()));
+          this->send_to_robot(this->traj_queue_.front());
+          this->traj_queue_.pop();
         }
 
         if (!this->motion_ctrl_.isConnected())
@@ -706,7 +713,7 @@ bool MotomanJointTrajectoryStreamer::disableRobotCB(std_srvs::Trigger::Request &
 
   trajectoryStop();
 
-  boost::mutex::scoped_lock lock(this->mutex_);
+  boost::recursive_mutex::scoped_lock lock(this->mutex_);
   bool ret = motion_ctrl_.setTrajMode(false);
   res.success = ret;
 
@@ -728,7 +735,7 @@ bool MotomanJointTrajectoryStreamer::enableRobotCB(std_srvs::Trigger::Request &r
                                                    std_srvs::Trigger::Response &res)
 {
 
-  boost::mutex::scoped_lock lock(this->mutex_);
+  boost::recursive_mutex::scoped_lock lock(this->mutex_);
   bool ret = motion_ctrl_.setTrajMode(true);
   res.success = ret;
 
@@ -748,7 +755,7 @@ bool MotomanJointTrajectoryStreamer::enableRobotCB(std_srvs::Trigger::Request &r
 // override trajectoryStop to send MotionCtrl message
 void MotomanJointTrajectoryStreamer::trajectoryStop()
 {
-  boost::mutex::scoped_lock lock(this->mutex_);
+  boost::recursive_mutex::scoped_lock lock(this->mutex_);
   this->state_ = TransferStates::IDLE; // stop sending trajectory points
   motion_ctrl_.stopTrajectory();
   this->setStreamingMode(false);
@@ -772,14 +779,16 @@ bool MotomanJointTrajectoryStreamer::is_valid(const trajectory_msgs::JointTrajec
   if ((cur_joint_pos_.header.stamp - ros::Time::now()).toSec() > pos_stale_time_)
     ROS_ERROR_RETURN(false, "Validation failed: Can't get current robot position.");
 
-  // FS100 requires trajectory start at current position
-  namespace IRC_utils = industrial_robot_client::utils;
-  if (!IRC_utils::isWithinRange(cur_joint_pos_.name, cur_joint_pos_.position,
-                                traj.joint_names, traj.points[0].positions,
-                                start_pos_tol_))
-  {
-    ROS_ERROR_RETURN(false, "Validation failed: Trajectory doesn't start at current position.");
-  }
+// AKo: Commented out to stream trajectories quickly. Tested with DX100.
+
+// FS100 requires trajectory start at current position
+//   namespace IRC_utils = industrial_robot_client::utils;
+//   if (!IRC_utils::isWithinRange(cur_joint_pos_.name, cur_joint_pos_.position,
+//                                 traj.joint_names, traj.points[0].positions,
+//                                 start_pos_tol_))
+//   {
+//     ROS_ERROR_RETURN(false, "Validation failed: Trajectory doesn't start at current position.");
+//   }
   return true;
 }
 
@@ -801,15 +810,17 @@ bool MotomanJointTrajectoryStreamer::is_valid(const motoman_msgs::DynamicJointTr
       if (pt.velocities.empty())
         ROS_ERROR_RETURN(false, "Validation failed: Missing velocity data for trajectory pt %d", i);
 
-      // FS100 requires trajectory start at current position
-      namespace IRC_utils = industrial_robot_client::utils;
+    // AKo: Commented out to stream trajectories quickly. Tested with DX100.
 
-      if (!IRC_utils::isWithinRange(cur_joint_pos_map_[group_number].name, cur_joint_pos_map_[group_number].position,
-                                    traj.joint_names, traj.points[0].groups[gr].positions,
-                                    start_pos_tol_))
-      {
-        ROS_ERROR_RETURN(false, "Validation failed: Trajectory doesn't start at current position.");
-      }
+    // FS100 requires trajectory start at current position
+    //   namespace IRC_utils = industrial_robot_client::utils;
+
+    //   if (!IRC_utils::isWithinRange(cur_joint_pos_map_[group_number].name, cur_joint_pos_map_[group_number].position,
+    //                                 traj.joint_names, traj.points[0].groups[gr].positions,
+    //                                 start_pos_tol_))
+    //   {
+    //     ROS_ERROR_RETURN(false, "Validation failed: Trajectory doesn't start at current position.");
+    //   }
     }
   }
 

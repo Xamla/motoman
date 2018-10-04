@@ -168,7 +168,7 @@ void JointTrajectoryStreamer::jointCommandCB(
   ROS_DEBUG("Current state is: %d", state);
 
   //If current state is idle, set to POINT_STREAMING
-  if (TransferStates::IDLE == state)
+  if (state == TransferStates::IDLE)
   {
     this->mutex_.lock();
       this->state_ = TransferStates::POINT_STREAMING;
@@ -185,7 +185,7 @@ void JointTrajectoryStreamer::jointCommandCB(
   }
 
   //if current state is POINT_STREAMING, process incoming point.
-  if (TransferStates::POINT_STREAMING == state)
+  if (state == TransferStates::POINT_STREAMING)
   {
     if (msg->points.empty())
     {
@@ -241,18 +241,24 @@ void JointTrajectoryStreamer::jointCommandCB(
 
 bool JointTrajectoryStreamer::send_to_robot(const std::vector<SimpleMessage>& messages)
 {
-  boost::mutex::scoped_lock lock(this->mutex_);
+  boost::recursive_mutex::scoped_lock lock(this->mutex_);
   int state = this->state_;
   ROS_INFO("Loading trajectory, setting state to streaming");
-  if (TransferStates::IDLE == state || TransferStates::POINT_STREAMING == state)
+  if (state == TransferStates::IDLE || state == TransferStates::POINT_STREAMING)
   {
-    ROS_WARN_COND(TransferStates::POINT_STREAMING == state, "Trajectory execution request received. Abort POINT_STREAMING_MODE");
+    ROS_WARN_COND(TransferStates::POINT_STREAMING == state, "Trajectory execution request received. Leaving POINT_STREAMING_MODE.");
     ROS_INFO("Executing trajectory of size: %d", static_cast<int>(messages.size()));
     this->current_traj_ = messages;
     this->current_point_ = 0;
     this->state_ = TransferStates::STREAMING;
     this->setStreamingMode(false);
     this->streaming_start_ = ros::Time::now();
+  }
+  else if (state == TransferStates::STREAMING)
+  {
+    // other trajectory being streamed... enqueue for later processing
+    ROS_INFO("Adding trajectory to queue (current queue size: %d)", static_cast<int>(this->traj_queue_.size()));
+    this->traj_queue_.push(messages);
   }
   else
   {
@@ -337,17 +343,23 @@ void JointTrajectoryStreamer::streamingThread()
       break;
 
     case TransferStates::STREAMING:
-      ROS_INFO("Industrial TransferStates::STREAMING");
       if (this->current_point_ >= static_cast<int>(this->current_traj_.size()))
       {
-        ROS_INFO("Trajectory streaming complete, setting state to IDLE");
         this->state_ = TransferStates::IDLE;
-        break;
+        if (this->traj_queue_.empty())
+        {
+          ROS_INFO("Trajectory streaming complete, setting state to IDLE");
+          break;
+        }
+
+        ROS_INFO("Trajectory queue not empty, continuing with next trajectory (current queue size: %d)", static_cast<int>(this->traj_queue_.size()));
+        this->send_to_robot(this->traj_queue_.front());
+        this->traj_queue_.pop();
       }
 
       if (!this->connection_->isConnected())
       {
-        ROS_DEBUG("Robot disconnected.  Attempting reconnect...");
+        ROS_DEBUG("Robot disconnected. Attempting reconnect...");
         connectRetryCount = 5;
         break;
       }
@@ -368,9 +380,6 @@ void JointTrajectoryStreamer::streamingThread()
 
       break;
    case TransferStates::POINT_STREAMING:
-
-        ROS_DEBUG("POINT_STREAMING in base JointTrajectoryStreamer");   // ##
-
         //if no points in queue, streaming complete, set to idle.
         if (this->streaming_queue_.empty())
         {

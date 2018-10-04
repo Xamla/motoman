@@ -201,7 +201,6 @@ void JointTrajectoryAction::watchdog(const ros::TimerEvent &e, int group_number)
 
 void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
 {
-
   int group_number;
   ROS_INFO( "Received complex goal.");
 // TODO(thiagodefreitas): change for getting the id from the group instead of a sequential checking on the map
@@ -243,11 +242,13 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
           dyn_group.positions = positions;
         }
         else
+        {
           dyn_group.positions.insert(
             dyn_group.positions.begin(),
             gh.getGoal()->trajectory.points[i].positions.begin() + ros_idx,
             gh.getGoal()->trajectory.points[i].positions.begin() + ros_idx
             + robot_groups_[rbt_idx].get_joint_names().size());
+        }
 
         if (gh.getGoal()->trajectory.points[i].velocities.empty())
         {
@@ -255,11 +256,13 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
           dyn_group.velocities = velocities;
         }
         else
+        {
           dyn_group.velocities.insert(
             dyn_group.velocities.begin(),
             gh.getGoal()->trajectory.points[i].velocities.begin()
             + ros_idx, gh.getGoal()->trajectory.points[i].velocities.begin()
             + ros_idx + robot_groups_[rbt_idx].get_joint_names().size());
+        }
 
         if (gh.getGoal()->trajectory.points[i].accelerations.empty())
         {
@@ -267,22 +270,28 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
           dyn_group.accelerations = accelerations;
         }
         else
+        {
           dyn_group.accelerations.insert(
             dyn_group.accelerations.begin(),
             gh.getGoal()->trajectory.points[i].accelerations.begin()
             + ros_idx, gh.getGoal()->trajectory.points[i].accelerations.begin()
             + ros_idx + robot_groups_[rbt_idx].get_joint_names().size());
+        }
+
         if (gh.getGoal()->trajectory.points[i].effort.empty())
         {
           std::vector<double> effort(num_joints, 0.0);
           dyn_group.effort = effort;
         }
         else
+        {
           dyn_group.effort.insert(
             dyn_group.effort.begin(),
             gh.getGoal()->trajectory.points[i].effort.begin()
             + ros_idx, gh.getGoal()->trajectory.points[i].effort.begin()
             + ros_idx + robot_groups_[rbt_idx].get_joint_names().size());
+        }
+
         dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
         dyn_group.group_number = group_number;
         dyn_group.num_joints = dyn_group.positions.size();
@@ -292,8 +301,6 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh)
       // Generating message for groups that were not present in the trajectory message
       else
       {
-
-
         std::vector<double> positions = this->full_robot_state.select(robot_groups_[group_number].get_joint_names());
         assert(positions.size() == num_joints);
         std::vector<double> velocities(num_joints, 0.0);
@@ -341,7 +348,6 @@ void JointTrajectoryAction::cancelCB(JointTractoryActionServer::GoalHandle gh)
   {
     ROS_WARN("Full body active goal and goal to cancel do not match, ignoring cancel request");
   }
-
 }
 
 void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh, int group_number)
@@ -394,7 +400,9 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh, int
             dyn_group.positions = positions;
           }
           else
+          {
             dyn_group.positions = gh.getGoal()->trajectory.points[i].positions;
+          }
 
           if (gh.getGoal()->trajectory.points[i].velocities.empty())
           {
@@ -402,21 +410,30 @@ void JointTrajectoryAction::goalCB(JointTractoryActionServer::GoalHandle gh, int
             dyn_group.velocities = velocities;
           }
           else
+          {
             dyn_group.velocities = gh.getGoal()->trajectory.points[i].velocities;
+          }
+
           if (gh.getGoal()->trajectory.points[i].accelerations.empty())
           {
             std::vector<double> accelerations(num_joints, 0.0);
             dyn_group.accelerations = accelerations;
           }
           else
+          {
             dyn_group.accelerations = gh.getGoal()->trajectory.points[i].accelerations;
+          }
+
           if (gh.getGoal()->trajectory.points[i].effort.empty())
           {
             std::vector<double> effort(num_joints, 0.0);
             dyn_group.effort = effort;
           }
           else
+          {
             dyn_group.effort = gh.getGoal()->trajectory.points[i].effort;
+          }
+
           dyn_group.time_from_start = gh.getGoal()->trajectory.points[i].time_from_start;
           dyn_group.group_number = group_number;
           dyn_group.num_joints = robot_groups_[group_number].get_joint_names().size();
@@ -519,65 +536,71 @@ void JointTrajectoryAction::controllerStateCB(
     this->last_position = last_trajectory_state_map_[robot_id]->actual.positions;
   }
 
-  if (ros::Duration((ros::Time::now() - this->start_trajectory_execution).toSec()) > (current_traj_map_[robot_id].points[last_point].time_from_start) && withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
-  {
-      if (this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, this->last_position) < 1e-3)
-      {
-          this->no_motion_counter++;
-      }
-      else
-      {
-          this->no_motion_counter = 0;
-      }
+  bool no_wait = (active_goal_map_[robot_id].getGoal()->goal_time_tolerance.toSec() < 0.0);
 
-    this->robot_converged = this->no_motion_counter > this->no_motion_threshold;
+  if (no_wait || ros::Duration((ros::Time::now() - this->start_trajectory_execution).toSec()) > (current_traj_map_[robot_id].points[last_point].time_from_start) && withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
+  {
+    if (this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, this->last_position) < 1e-3)
+    {
+      this->no_motion_counter++;
+    }
+    else
+    {
+      this->no_motion_counter = 0;
+    }
+
+    this->robot_converged = no_wait || this->no_motion_counter > this->no_motion_threshold;
+    if (no_wait)
+    {
+      ROS_WARN("goal_time_tolerance < 0, convergence check is disabled");
+    }
 
     ROS_INFO("Convergence counter = %d\n", this->no_motion_counter);
     if (this->robot_converged)
     {
-        if (last_robot_status_ )
+      if (last_robot_status_ )
+      {
+        // Additional check for motion stoppage since the controller goal may still
+        // be moving.  The current robot driver calls a motion stop if it receives
+        // a new trajectory while it is still moving.  If the driver is not publishing
+        // the motion state (i.e. old driver), this will still work, but it warns you.
+        if (last_robot_status_->in_motion.val == industrial_msgs::TriState::FALSE)
         {
-            // Additional check for motion stoppage since the controller goal may still
-            // be moving.  The current robot driver calls a motion stop if it receives
-            // a new trajectory while it is still moving.  If the driver is not publishing
-            // the motion state (i.e. old driver), this will still work, but it warns you.
-            if (last_robot_status_->in_motion.val == industrial_msgs::TriState::FALSE)
-            {
-                ROS_INFO("Inside goal constraints, stopped moving, return success for action, robot_id = %d", robot_id);
-                active_goal_map_[robot_id].setSucceeded();
-                has_active_goal_map_[robot_id] = false;
-            }
-            else if (last_robot_status_->in_motion.val == industrial_msgs::TriState::UNKNOWN)
-            {
-                ROS_INFO("Inside goal constraints, return success for action");
-                ROS_WARN("Robot status in motion unknown, the robot driver node and controller code should be updated");
-                active_goal_map_[robot_id].setSucceeded();
-                has_active_goal_map_[robot_id] = false;
-            }
-            else
-            {
-                ROS_DEBUG("Within goal constraints but robot is still moving");
-            }
+          ROS_INFO("Inside goal constraints, stopped moving, return success for action, robot_id = %d", robot_id);
+          active_goal_map_[robot_id].setSucceeded();
+          has_active_goal_map_[robot_id] = false;
+        }
+        else if (last_robot_status_->in_motion.val == industrial_msgs::TriState::UNKNOWN)
+        {
+          ROS_INFO("Inside goal constraints, return success for action");
+          ROS_WARN("Robot status in motion unknown, the robot driver node and controller code should be updated");
+          active_goal_map_[robot_id].setSucceeded();
+          has_active_goal_map_[robot_id] = false;
         }
         else
         {
-            ROS_INFO("Inside goal constraints, return success for action");
-            ROS_WARN("Robot status is not being published the robot driver node and controller code should be updated");
-            active_goal_map_[robot_id].setSucceeded();
-            has_active_goal_map_[robot_id] = false;
+          ROS_DEBUG("Within goal constraints but robot is still moving");
         }
+      }
+      else
+      {
+        ROS_INFO("Inside goal constraints, return success for action");
+        ROS_WARN("Robot status is not being published the robot driver node and controller code should be updated");
+        active_goal_map_[robot_id].setSucceeded();
+        has_active_goal_map_[robot_id] = false;
+      }
     }
   }
   else
   {
-      ROS_INFO_THROTTLE(0.1, "goal: %f \n", this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
-      this->no_motion_counter = 0;
-      this->robot_converged = false;
-      if ( ros::Duration((ros::Time::now() - this->start_trajectory_execution).toSec()) > (current_traj_map_[robot_id].points[last_point].time_from_start + ros::Duration(10.3)))
-      {
-          ROS_ERROR("Could not converge to goal in time");
-          abortGoal(robot_id);
-      }
+    ROS_INFO_THROTTLE(0.1, "goal: %f \n", this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, current_traj_map_[robot_id].points[last_point].positions));
+    this->no_motion_counter = 0;
+    this->robot_converged = false;
+    if ( ros::Duration((ros::Time::now() - this->start_trajectory_execution).toSec()) > (current_traj_map_[robot_id].points[last_point].time_from_start + ros::Duration(10.3)))
+    {
+      ROS_ERROR("Could not converge to goal in time");
+      abortGoal(robot_id);
+    }
   }
 }
 
@@ -600,8 +623,6 @@ void JointTrajectoryAction::controllerStateCB(
     ROS_DEBUG("Current trajectory is empty, ignoring feedback");
     return;
   }
-
-
 
   if (!this->full_robot_state.all_updated())
   {
@@ -826,5 +847,3 @@ bool JointTrajectoryAction::withinGoalConstraints(
 
 }  // namespace joint_trajectory_action
 }  // namespace industrial_robot_client
-
-
