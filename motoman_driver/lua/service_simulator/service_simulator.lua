@@ -516,7 +516,6 @@ end
     bool[] skill_pending
 ]]
 local function handleSkillRead(request, response, header)
-    print("SkillRead", tostring(request))
     response.success = true
     response.message = 'ok'
     response.cmd = { '', '' }
