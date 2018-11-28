@@ -76,7 +76,12 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
   bool rtn = true;
 
   ROS_INFO("MotomanJointTrajectoryStreamer: init");
-
+  pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
+  this->heartbeat_msg_.header.stamp = ros::Time::now();
+  this->heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
+  this->heartbeat_msg_.details = TopicHeartbeatStatus::generateMessageText(TopicHeartbeatStatus::intToStatusCode(heartbeat_msg_.status));
+  pub_heartbeat_.publish(heartbeat_msg_);
+  last_published_heartbeat = ros::Time::now();
   this->robot_groups_ = robot_groups;
   rtn &= JointTrajectoryStreamer::init(connection, robot_groups, velocity_limits);
 
@@ -99,13 +104,6 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
 
   job_action_ = JobActionServer::create("jobaction", motion_ctrl_, node_);
   job_action_->start();
-
-  pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
-  this->heartbeat_msg_.header.stamp = ros::Time::now();
-  this->heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
-  this->heartbeat_msg_.details = TopicHeartbeatStatus::generateMessageText(TopicHeartbeatStatus::intToStatusCode(heartbeat_msg_.status));
-  pub_heartbeat_.publish(heartbeat_msg_);
-  last_published_heartbeat = ros::Time::now();
   return rtn;
 }
 
@@ -116,6 +114,12 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
   bool rtn = true;
 
   ROS_INFO("MotomanJointTrajectoryStreamer: init");
+  pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
+  this->heartbeat_msg_.header.stamp = ros::Time::now();
+  this->heartbeat_msg_.status = static_cast<int>(TopicHeartbeatStatus::TopicCode::STARTING);
+  this->heartbeat_msg_.details = TopicHeartbeatStatus::generateMessageText(TopicHeartbeatStatus::intToStatusCode(heartbeat_msg_.status));
+  pub_heartbeat_.publish(heartbeat_msg_);
+  last_published_heartbeat = ros::Time::now();
 
   rtn &= JointTrajectoryStreamer::init(connection, joint_names, velocity_limits);
 
@@ -128,7 +132,11 @@ bool MotomanJointTrajectoryStreamer::init(SmplMsgConnection *connection, const s
   disabler_ = node_.advertiseService("robot_disable", &MotomanJointTrajectoryStreamer::disableRobotCB, this);
 
   enabler_ = node_.advertiseService("robot_enable", &MotomanJointTrajectoryStreamer::enableRobotCB, this);
-  //pub_heartbeat_ = node_.advertise<xamla_sysmon_msgs::HeartBeat>("heartbeat", 1);
+
+  services_ = MotomanRosServices::create(&motion_ctrl_, &node_);
+
+  job_action_ = JobActionServer::create("jobaction", motion_ctrl_, node_);
+  job_action_->start();
   return rtn;
 }
 
