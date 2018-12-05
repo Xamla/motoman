@@ -538,7 +538,8 @@ void JointTrajectoryAction::controllerStateCB(
 
   bool no_wait = (active_goal_map_[robot_id].getGoal()->goal_time_tolerance.toSec() < 0.0);
 
-  if (no_wait || ros::Duration((ros::Time::now() - this->start_trajectory_execution).toSec()) > (current_traj_map_[robot_id].points[last_point].time_from_start) && withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id))
+  ros::Duration time_since_start(ros::Time::now() - this->start_trajectory_execution);
+  if (time_since_start > current_traj_map_[robot_id].points[last_point].time_from_start && (no_wait || withinGoalConstraints(last_trajectory_state_map_[robot_id], current_traj_map_[robot_id], robot_id)))
   {
     if (this->getMaxPerAxisDistance(last_trajectory_state_map_[robot_id]->actual.positions, this->last_position) < 1e-3)
     {
@@ -642,7 +643,8 @@ void JointTrajectoryAction::controllerStateCB(
   }
 
   int last_point = current_traj_.points.size() - 1;
-  if (no_wait || withinGoalConstraints(current_traj_))
+  ros::Duration time_since_start(ros::Time::now() - this->start_trajectory_execution);
+  if (time_since_start > current_traj_.points[last_point].time_from_start && (no_wait || withinGoalConstraints(current_traj_)))
   {
     if (last_robot_status_)
     {
