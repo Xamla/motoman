@@ -65,7 +65,7 @@ class RobotFeedbackMonitor
         this->joint_names_ = jnames;
     }
 
-    std::vector<double> select(const std::vector<std::string> & jnames);
+    std::vector<double> select(const std::vector<std::string> & jnames, bool reset_updated = true);
 
     void update_joint_values(const std::vector<std::string> & jnames, const std::vector<double> & values);
 

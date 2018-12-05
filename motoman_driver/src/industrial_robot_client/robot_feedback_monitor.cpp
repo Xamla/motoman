@@ -19,7 +19,7 @@ namespace industrial_robot_client
     }
 
     //Whenever values are read from monitor the values are marked as not updated
-    std::vector<double> RobotFeedbackMonitor::select(const std::vector<std::string> & jnames)
+    std::vector<double> RobotFeedbackMonitor::select(const std::vector<std::string> & jnames, bool reset_updated)
     {
       boost::mutex::scoped_lock lock( this->mutex );
       std::vector<double> result;
@@ -31,7 +31,10 @@ namespace industrial_robot_client
         {
           int index = std::distance(this->joint_names_.begin(), it);
           result.push_back(this->values_[index]);
-          this->updated_[index] = false;
+          if (reset_updated)
+          {
+            this->updated_[index] = false;
+          }
         }
         else
         {

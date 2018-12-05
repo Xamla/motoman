@@ -634,8 +634,15 @@ void JointTrajectoryAction::controllerStateCB(
   // Checks that we have ended inside the goal constraints and has motion stopped
 
   ROS_DEBUG("A Checking goal constraints");
+
+  bool no_wait = (this->active_goal_.getGoal()->goal_time_tolerance.toSec() < 0.0);
+  if (no_wait)
+  {
+    ROS_WARN("goal_time_tolerance < 0, convergence check is disabled");
+  }
+
   int last_point = current_traj_.points.size() - 1;
-  if (withinGoalConstraints(current_traj_))
+  if (no_wait || withinGoalConstraints(current_traj_))
   {
     if (last_robot_status_)
     {
@@ -740,7 +747,7 @@ bool JointTrajectoryAction::withinGoalConstraints(
 
     if (industrial_robot_client::utils::isWithinRange(
       traj.joint_names,
-      this->full_robot_state.select(traj.joint_names), traj.joint_names,
+      this->full_robot_state.select(traj.joint_names, false), traj.joint_names,
       traj.points[last_point].positions, goal_threshold_))
     {
       rtn = true;
