@@ -167,6 +167,8 @@ private:
   bool robot_converged;
   std::vector<double> last_position;
   ros::Time start_trajectory_execution;
+  uint robot_status_msgs_since_trajectory_start;
+
   /**
    * \brief The joint names associated with the robot the action is
    * interfacing with.  The joint names must be the same as expected
