@@ -148,6 +148,9 @@ set_target_properties(motoman_motion_streaming_interface
   PROPERTIES OUTPUT_NAME motion_streaming_interface
   PREFIX "")
 
+# Emergency stop client library
+add_library(motoman_emergency_stop_client src/industrial_robot_client/motoman_emergencs_stop_ros_service.cpp)
+add_dependencies(motoman_emergency_stop_client ${catkin_EXPORTED_TARGETS})
 
 #----------------------------------------------------------------
 # FS100 uses opposite byte-ordering from most i386-based PCs
@@ -164,6 +167,13 @@ target_link_libraries(motoman_industrial_robot_client_bswap
   industrial_robot_client_bswap
   industrial_utils)
 add_dependencies(motoman_industrial_robot_client_bswap ${catkin_EXPORTED_TARGETS})
+
+# Emergency stop node
+add_executable(motoman_emergency_stop_node
+  src/emergencs_stop_service_node.cpp)
+target_link_libraries(motoman_emergency_stop_node
+  motoman_emergency_stop_client
+  ${catkin_LIBRARIES})
 
 # Robot state node
 add_executable(motoman_robot_state_bswap
