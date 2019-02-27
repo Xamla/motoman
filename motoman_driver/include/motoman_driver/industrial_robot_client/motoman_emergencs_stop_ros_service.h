@@ -141,7 +141,8 @@ class MotomanEmergencyStopRosService
 public:
   typedef boost::shared_ptr<MotomanEmergencyStopRosService> Ptr;
   static Ptr create(ros::NodeHandle *pn);
-  void setAlarmMessage(std::string message){ this->alarm_message = message;};
+  void setTopicServiceRoot(std::string message){ this->alarm_message = message;};
+  void setAlarmMessage(std::string value){ this->alarm_message = topic_service_root;};
   void setSubCode(int value){ this->sub_code = value;};
   void setAlarmCode(int value){ this->alarm_code = value;};
   /**
@@ -159,6 +160,7 @@ protected:
   int alarm_code;
   int sub_code;
   std::string alarm_message;
+  std::string topic_service_root;
   bool disableRobot();
   bool switchOffServoPower();
   bool setAlarm();

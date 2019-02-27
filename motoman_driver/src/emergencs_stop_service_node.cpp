@@ -49,11 +49,15 @@ int main(int argc, char** argv)
   int sub_code;
   ros::param::param<int>("~sub_code", sub_code, 5);
 
+  std::string root_name;
+  ros::param::param<std::string>("~robot_service_root_name", root_name, "/sda10d");
+
   std::string message;
   ros::param::param<std::string>("~alarm_message", message, "emergency");
 
   motoman::ros_services::MotomanEmergencyStopRosService::Ptr service_ptr = motoman::ros_services::MotomanEmergencyStopRosService::create(&pn);
 
+  service_ptr->setTopicServiceRoot(root_name);
   service_ptr->setAlarmMessage(message);
   service_ptr->setSubCode(sub_code);
   service_ptr->setAlarmCode(alarm_code);

@@ -43,7 +43,7 @@ namespace ros_services
 {
 
 MotomanEmergencyStopRosService::MotomanEmergencyStopRosService(ros::NodeHandle *pn)
-    : node_(pn), alarm_code(8053), sub_code(5), alarm_message("emergency")
+    : node_(pn), alarm_code(8053), sub_code(5), alarm_message("emergency"), topic_service_root("/sda10d")
 {
   srv_trigger_e_stop_ = node_->advertiseService("trigger_emergency_stop", &MotomanEmergencyStopRosService::triggerEstopCB, this);
 }
@@ -59,11 +59,11 @@ MotomanEmergencyStopRosService::Ptr MotomanEmergencyStopRosService::create(ros::
 
 bool MotomanEmergencyStopRosService::disableRobot()
 {
-  ros::ServiceClient disable_robot_client = node_->serviceClient<std_srvs::Trigger>("~disable_robot");
+  ros::ServiceClient disable_robot_client = node_->serviceClient<std_srvs::Trigger>(this->topic_service_root + "/disable_robot");
   std_srvs::Trigger srv;
   if (disable_robot_client.call(srv))
   {
-    ROS_ERROR("Failed to call service disable_robot");
+    ROS_ERROR("Failed to call service disable_robot. (%s/disable_robot)", this->topic_service_root.c_str());
     return false;
   }
   return true;
@@ -71,12 +71,12 @@ bool MotomanEmergencyStopRosService::disableRobot()
 
 bool MotomanEmergencyStopRosService::switchOffServoPower()
 {
-  ros::ServiceClient set_servo_power_client = node_->serviceClient<motoman_msgs::SetServoPower>("~set_servo_power");
+  ros::ServiceClient set_servo_power_client = node_->serviceClient<motoman_msgs::SetServoPower>(this->topic_service_root + "/set_servo_power");
   motoman_msgs::SetServoPower srv;
   srv.request.power_on = false;
   if (set_servo_power_client.call(srv))
   {
-    ROS_ERROR("Failed to call service to set servo power.");
+    ROS_ERROR("Failed to call service to set servo power. (%s/set_servo_power)", this->topic_service_root.c_str());
     return false;
   }
   //ROS_INFO(srv.response.message);
@@ -85,14 +85,14 @@ bool MotomanEmergencyStopRosService::switchOffServoPower()
 
 bool MotomanEmergencyStopRosService::setAlarm()
 {
-  ros::ServiceClient set_alarm_client = node_->serviceClient<motoman_msgs::SetAlarm>("~set_alarm");
+  ros::ServiceClient set_alarm_client = node_->serviceClient<motoman_msgs::SetAlarm>(this->topic_service_root + "/set_alarm");
   motoman_msgs::SetAlarm srv;
   srv.request.alm_code = this->alarm_code;
   srv.request.sub_code = this->sub_code;
   srv.request.alm_msg = this->alarm_message;
   if (set_alarm_client.call(srv))
   {
-    ROS_ERROR("Failed to call service to set servo power.");
+    ROS_ERROR("Failed to call service to set alarm. (%s/set_alarm)", this->topic_service_root.c_str());
     return false;
   }
   //ROS_INFO(srv.response.message);
