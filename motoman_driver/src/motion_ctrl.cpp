@@ -236,8 +236,9 @@ void bswap(MP_JOB_STEP_NO_SEND_DATA &value)
   value.usStep = Swap16(value.usStep);
 }
 
-void bswap(MP_USR_VAR_INFO &value)
+void bswapRead(MP_USR_VAR_INFO &value)
 {
+  // when reading `value.var_type` is in robot controller byte order
   value.var_type = Swap32(value.var_type);
   value.var_no = Swap32(value.var_no);
   switch (value.var_type)
@@ -252,6 +253,25 @@ void bswap(MP_USR_VAR_INFO &value)
     value.val.r = Swap32(value.val.r);
     break;
   }
+}
+
+void bswapWrite(MP_USR_VAR_INFO &value)
+{
+  // when writing value.var_type` is in host byte order
+  switch (value.var_type)
+  {
+  case 1:
+    value.val.i = Swap16(value.val.i);
+    break;
+  case 2:
+    value.val.d = Swap32(value.val.d);
+    break;
+  case 3:
+    value.val.r = Swap32(value.val.r);
+    break;
+  }
+  value.var_type = Swap32(value.var_type);
+  value.var_no = Swap32(value.var_no);
 }
 
 void bswap(LIST_JOBS_RSP_DATA &value)
@@ -1673,13 +1693,13 @@ bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &re
 
     if (!this->sendAndReceiveRpc(&data, &reply))
     {
-      ROS_ERROR("failed to send mpPutUserVars command");
+      ROS_ERROR("failed to send mpGetUserVars command");
       return false;
     }
     call_id_++;
     const std::vector<char> buffer = reply.getResultData();
     MP_USR_VAR_INFO *result_data = (MP_USR_VAR_INFO *)buffer.data();
-    bswap(*result_data);
+    bswapRead(*result_data);
 
     int status = reply.getStatus();
 
@@ -1687,7 +1707,7 @@ bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &re
     {
       res.success = false;
       res.err_no = status;
-      res.message = "failed to get mpPutUserVars. Received status: " + std::to_string(status);
+      res.message = "failed to get mpGetUserVars. Received status: " + std::to_string(status);
       ROS_ERROR("%s", res.message.c_str());
       return false;
     }
@@ -1786,7 +1806,7 @@ bool MotomanMotionCtrl::putUserVars(const motoman_msgs::PutUserVars::Request &re
 
     std::vector<char> tmp_vector(sizeof(MP_USR_VAR_INFO), 0);
 
-    bswap(sData);
+    bswapWrite(sData);
     memcpy(tmp_vector.data(), &sData, sizeof(MP_USR_VAR_INFO));
 
     data.setArgumentsSize(tmp_vector.size());
