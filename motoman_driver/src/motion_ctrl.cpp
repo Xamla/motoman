@@ -1685,7 +1685,7 @@ bool MotomanMotionCtrl::getUserVars(const motoman_msgs::GetUserVars::Request &re
 
     std::vector<char> tmp_vector(sizeof(MP_USR_VAR_INFO), 0);
 
-    bswap(sData);
+    bswapWrite(sData);
     memcpy(tmp_vector.data(), &sData, sizeof(MP_USR_VAR_INFO));
 
     data.setArgumentsSize(tmp_vector.size());
